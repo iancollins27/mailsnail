@@ -1,0 +1,63 @@
+{
+  "name": "mailsnail",
+  "mcpName": "io.github.iancollins27/mailsnail",
+  "version": "0.6.0",
+  "description": "Send physical mail (USPS letters, postcards, certified mail) from AI agents. MCP server with managed mode (no signup, pay-per-piece via Stripe Link), self-hosted gateway, Click2Mail BYOK, Lob BYOK, and multi-provider failover. Powers Mailsnail.",
+  "type": "module",
+  "bin": {
+    "mailsnail": "src/index.js"
+  },
+  "main": "src/index.js",
+  "files": [
+    "src",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "start": "node src/index.js",
+    "smoke": "node src/smoke.js",
+    "test": "node src/smoke.js"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "physical-mail",
+    "direct-mail",
+    "snail-mail",
+    "mailsnail",
+    "letters",
+    "postcards",
+    "certified-mail",
+    "usps",
+    "click2mail",
+    "lob",
+    "stripe",
+    "agentic-commerce",
+    "machine-payments-protocol",
+    "ai-agents",
+    "claude",
+    "cursor",
+    "anthropic",
+    "open-source",
+    "provider-agnostic"
+  ],
+  "author": "Ian Collins",
+  "homepage": "https://mailsnail.dev",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/iancollins27/mailsnail.git",
+    "directory": "packages/mailsnail"
+  },
+  "bugs": {
+    "url": "https://github.com/iancollins27/mailsnail/issues"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "@mailsnail/core": "^0.1.0",
+    "@modelcontextprotocol/sdk": "^1.0.0",
+    "zod": "^3.23.8"
+  },
+  "license": "MIT"
+}
