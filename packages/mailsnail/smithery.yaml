@@ -1,0 +1,46 @@
+startCommand:
+  type: stdio
+  configSchema:
+    type: object
+    required: [MAIL_PROVIDER]
+    properties:
+      MAIL_PROVIDER:
+        type: string
+        enum: [managed, click2mail, lob]
+        default: managed
+        description: Where to actually mail letters from.
+      MAIL_API_BASE_URL:
+        type: string
+        default: https://api.mailsnail.dev
+        description: Required when MAIL_PROVIDER=managed. The hosted Mailsnail backend.
+      CLICK2MAIL_USERNAME:
+        type: string
+        description: Required when MAIL_PROVIDER=click2mail.
+      CLICK2MAIL_PASSWORD:
+        type: string
+        description: Required when MAIL_PROVIDER=click2mail.
+      LOB_API_KEY:
+        type: string
+        description: Required when MAIL_PROVIDER=lob.
+      MAIL_MCP_ALLOW_LIVE:
+        type: string
+        default: "0"
+        description: Set to "1" to actually mail (BYOK modes only). Default is dry-run.
+      MAIL_MCP_SPEND_CAP_USD:
+        type: string
+        default: "25"
+        description: Per-session estimated spend cap.
+  commandFunction: |
+    (config) => ({
+      command: "npx",
+      args: ["-y", "mailsnail"],
+      env: {
+        MAIL_PROVIDER: config.MAIL_PROVIDER || "managed",
+        MAIL_API_BASE_URL: config.MAIL_API_BASE_URL || "https://api.mailsnail.dev",
+        CLICK2MAIL_USERNAME: config.CLICK2MAIL_USERNAME,
+        CLICK2MAIL_PASSWORD: config.CLICK2MAIL_PASSWORD,
+        LOB_API_KEY: config.LOB_API_KEY,
+        MAIL_MCP_ALLOW_LIVE: config.MAIL_MCP_ALLOW_LIVE || "0",
+        MAIL_MCP_SPEND_CAP_USD: config.MAIL_MCP_SPEND_CAP_USD || "25",
+      },
+    })

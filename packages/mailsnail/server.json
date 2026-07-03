@@ -1,0 +1,60 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-09-29/server.schema.json",
+  "name": "io.github.iancollins27/mailsnail",
+  "description": "Send physical mail (USPS letters, postcards, certified mail) from AI agents. No signup — pay-per-piece via Stripe Link / Shared Payment Tokens. Powers Mailsnail.",
+  "status": "active",
+  "version": "0.6.0",
+  "websiteUrl": "https://mailsnail.dev",
+  "repository": {
+    "url": "https://github.com/iancollins27/mailsnail",
+    "source": "github"
+  },
+  "packages": [
+    {
+      "registryType": "npm",
+      "registryBaseUrl": "https://registry.npmjs.org",
+      "identifier": "mailsnail",
+      "version": "0.6.0",
+      "transport": {
+        "type": "stdio"
+      },
+      "environmentVariables": [
+        {
+          "name": "MAIL_PROVIDER",
+          "description": "Where to mail from: 'managed' (default, no signup, pay-per-piece via Stripe), 'click2mail' (BYO account), or 'lob' (BYO key).",
+          "default": "managed",
+          "isRequired": true
+        },
+        {
+          "name": "MAIL_API_BASE_URL",
+          "description": "Hosted Mailsnail backend. Required when MAIL_PROVIDER=managed.",
+          "default": "https://api.mailsnail.dev"
+        },
+        {
+          "name": "CLICK2MAIL_USERNAME",
+          "description": "Click2Mail account username. Required when MAIL_PROVIDER=click2mail."
+        },
+        {
+          "name": "CLICK2MAIL_PASSWORD",
+          "description": "Click2Mail account password. Required when MAIL_PROVIDER=click2mail.",
+          "isSecret": true
+        },
+        {
+          "name": "LOB_API_KEY",
+          "description": "Lob API key. Required when MAIL_PROVIDER=lob. test_* is free; live_* actually mails.",
+          "isSecret": true
+        },
+        {
+          "name": "MAIL_MCP_ALLOW_LIVE",
+          "description": "Set to '1' to actually mail in BYOK modes. Default '0' is dry-run.",
+          "default": "0"
+        },
+        {
+          "name": "MAIL_MCP_SPEND_CAP_USD",
+          "description": "Per-session estimated spend cap. Server refuses sends past this.",
+          "default": "25"
+        }
+      ]
+    }
+  ]
+}
