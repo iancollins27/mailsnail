@@ -1,0 +1,51 @@
+{
+  "name": "@mailsnail/gateway",
+  "version": "0.1.0",
+  "description": "Self-hostable physical-mail REST API: bring your own print-provider credentials (Click2Mail, Lob, or a failover chain), get /v1/verify, /v1/preview, /v1/letters, /v1/postcards with server-side text-to-PDF rendering. The open half of Mailsnail's managed API.",
+  "type": "module",
+  "main": "src/app.js",
+  "bin": {
+    "mailsnail-gateway": "src/cli.js"
+  },
+  "exports": {
+    ".": "./src/app.js"
+  },
+  "files": [
+    "src",
+    "README.md",
+    "Dockerfile"
+  ],
+  "scripts": {
+    "start": "node src/cli.js",
+    "test": "node --test"
+  },
+  "keywords": [
+    "physical-mail",
+    "direct-mail",
+    "letters",
+    "postcards",
+    "certified-mail",
+    "usps",
+    "click2mail",
+    "lob",
+    "self-hosted",
+    "mail-api",
+    "mailsnail"
+  ],
+  "author": "Ian Collins",
+  "homepage": "https://mailsnail.dev",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/iancollins27/mailsnail.git",
+    "directory": "packages/gateway"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "@mailsnail/core": "^0.1.0",
+    "express": "^4.19.2",
+    "pdfkit": "^0.15.0"
+  },
+  "license": "MIT"
+}

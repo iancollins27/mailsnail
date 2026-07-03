@@ -22,9 +22,8 @@ claude mcp add mailsnail -- npx -y mailsnail
 |---|---|
 | [`mailsnail`](packages/mailsnail) | MCP server — 7 tools (`verify_address`, `preview_letter`, `send_letter`, `send_postcard`, `get_letter`, `list_letters`, `cancel_letter`) over any provider below. Works in Claude Code, Claude Desktop, Cursor, Codex CLI, OpenAI Agents SDK. |
 | [`@mailsnail/core`](packages/core) | Provider-agnostic core: adapters (Click2Mail, Lob, any Mailsnail gateway), multi-provider failover router, request validation. Zero dependencies. |
+| [`@mailsnail/gateway`](packages/gateway) | Self-hostable REST API: BYO provider credentials, `body_text`→PDF rendering, proofs, invocation logging. The managed service at `api.mailsnail.dev` runs the same wire protocol. |
 | [`spec/`](spec) | The provider-neutral mail-piece schema + the failover-safety contract. Implement it and anything — including a print shop — becomes a Mailsnail-compatible node. |
-
-`@mailsnail/gateway` (self-hostable REST API: BYO provider credentials, `body_text`→PDF rendering, proofs) is next — the managed service at `api.mailsnail.dev` runs the same wire protocol.
 
 ## Four ways to run it
 
@@ -50,7 +49,7 @@ You're letting software put paper in mailboxes and spend money doing it. Read th
 
 ## Status
 
-Early. US-only today. Letters, certified letters, and postcards. The managed API, MCP server, and Click2Mail/Lob adapters are live; the self-host gateway package and additional adapters (PostGrid, Stannp) are the current roadmap — [CONTRIBUTING.md](CONTRIBUTING.md) has the adapter guide if you want one sooner.
+Early. US-only today. Letters, certified letters, and postcards. The managed API, MCP server, self-host gateway, and Click2Mail/Lob adapters are live; additional adapters (PostGrid, Stannp) are the current roadmap — [CONTRIBUTING.md](CONTRIBUTING.md) has the adapter guide if you want one sooner.
 
 ## License
 
