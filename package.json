@@ -1,0 +1,17 @@
+{
+  "name": "mailsnail-monorepo",
+  "private": true,
+  "description": "Open-source, provider-agnostic physical mail for AI agents and developers. Monorepo: MCP server, core provider adapters, self-host gateway.",
+  "type": "module",
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "test": "npm run test --workspaces --if-present",
+    "smoke": "npm run smoke --workspace=mailsnail"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "license": "MIT"
+}

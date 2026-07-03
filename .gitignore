@@ -1,0 +1,7 @@
+node_modules/
+.env
+.env.*
+*.log
+pdfs/
+.DS_Store
+package-lock.json.bak

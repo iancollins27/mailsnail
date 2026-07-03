@@ -1,0 +1,91 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://mailsnail.dev/spec/mailpiece.v0.schema.json",
+  "title": "Mailsnail Mail Piece (v0)",
+  "description": "Provider-neutral description of a physical mail piece. Any provider adapter or gateway that accepts this shape and returns the standard result shape is Mailsnail-compatible.",
+  "definitions": {
+    "address": {
+      "type": "object",
+      "description": "US postal address. address_country is reserved for future international support.",
+      "required": ["name", "address_line1", "address_city", "address_state", "address_zip"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "company": { "type": "string" },
+        "address_line1": { "type": "string", "minLength": 1 },
+        "address_line2": { "type": "string" },
+        "address_city": { "type": "string", "minLength": 1 },
+        "address_state": { "type": "string", "minLength": 2, "maxLength": 2 },
+        "address_zip": { "type": "string", "minLength": 5 },
+        "address_country": { "type": "string", "default": "US" }
+      },
+      "additionalProperties": false
+    },
+    "letter": {
+      "type": "object",
+      "description": "A letter. Content is exactly one of file_url (pre-rendered PDF, US Letter 8.5x11) or body_text (plain text; rendered server-side by a gateway).",
+      "required": ["to", "from"],
+      "properties": {
+        "to": { "$ref": "#/definitions/address" },
+        "from": { "$ref": "#/definitions/address" },
+        "file_url": { "type": "string", "format": "uri" },
+        "body_text": { "type": "string", "maxLength": 20000 },
+        "color": { "type": "boolean", "default": false },
+        "double_sided": { "type": "boolean", "default": true },
+        "extra_service": {
+          "type": "string",
+          "enum": ["certified", "registered", "certified_return_receipt"],
+          "description": "Tracking / proof-of-delivery add-ons. 'certified' is the common choice for legal and compliance mail."
+        },
+        "description": { "type": "string" }
+      },
+      "oneOf": [
+        { "required": ["file_url"], "not": { "required": ["body_text"] } },
+        { "required": ["body_text"], "not": { "required": ["file_url"] } }
+      ],
+      "additionalProperties": false
+    },
+    "postcard": {
+      "type": "object",
+      "description": "A postcard. front_url is a PDF of the front (or combined front+back for single-document providers such as Click2Mail); back_url is the back where the provider takes separate sides (Lob).",
+      "required": ["to", "from", "front_url"],
+      "properties": {
+        "to": { "$ref": "#/definitions/address" },
+        "from": { "$ref": "#/definitions/address" },
+        "front_url": { "type": "string", "format": "uri" },
+        "back_url": { "type": "string", "format": "uri" },
+        "size": { "type": "string", "enum": ["4x6", "6x9", "6x11"], "default": "4x6" },
+        "description": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "send_result": {
+      "type": "object",
+      "description": "Standard result returned by every adapter for a send operation.",
+      "required": ["id", "status", "mode"],
+      "properties": {
+        "id": { "type": "string", "description": "Provider job/letter id. Quote verbatim; needed for get/cancel." },
+        "status": { "type": "string" },
+        "mode": { "type": "string", "enum": ["LIVE", "TEST"] },
+        "expected_delivery_date": { "type": "string" },
+        "tracking_number": { "type": ["string", "null"] },
+        "url": { "type": ["string", "null"], "description": "Receipt or artifact URL when available." },
+        "normalized": { "$ref": "#/definitions/address", "description": "CASS-standardized recipient address when the provider returns one." },
+        "raw": { "description": "Provider-native response, untranslated." }
+      }
+    },
+    "verify_result": {
+      "type": "object",
+      "description": "Standard result returned by every adapter for address verification.",
+      "required": ["deliverability"],
+      "properties": {
+        "deliverability": { "type": "string", "description": "'deliverable' or a provider-specific reason it isn't." },
+        "normalized": { "$ref": "#/definitions/address" },
+        "raw": { "description": "Provider-native response, untranslated." }
+      }
+    }
+  },
+  "oneOf": [
+    { "$ref": "#/definitions/letter" },
+    { "$ref": "#/definitions/postcard" }
+  ]
+}
