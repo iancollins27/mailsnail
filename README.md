@@ -1,11 +1,10 @@
-<!-- DRAFT — voice-bearing (🟡). Ian's taste pass required before the repo goes public.
-     This README is the canonical listing copy for the project. -->
-
 # Mailsnail
 
-**Open-source, provider-agnostic physical mail — for AI agents and the code they run in.**
+[![smoke](https://github.com/iancollins27/mailsnail/actions/workflows/smoke.yml/badge.svg)](https://github.com/iancollins27/mailsnail/actions/workflows/smoke.yml)
 
-Agents have every channel except one. They can email, text, call, and post — but until now, putting a real, postmarked envelope in a mailbox meant a human signing up for a print-provider account, provisioning API keys, and wiring billing. Mailsnail closes that gap:
+**Open-source, provider-agnostic physical mail for AI agents.**
+
+Agents have every channel except one. They can email, text, call, and post to every feed — but until now, putting a real, postmarked envelope in a mailbox meant a human signing up for a print-provider account, provisioning API keys, and wiring billing. Mailsnail closes that gap:
 
 - **No signup in managed mode.** Agents pay per piece via Stripe Shared Payment Tokens over the [Machine Payments Protocol](https://docs.stripe.com/payments/machine/mpp) (HTTP 402). First letter can go out minutes after install. $1.50 first-class, $9.00 certified, $1.00 postcard — flat, no subscription.
 - **No lock-in, ever.** The provider layer is open and swappable: bring your own Click2Mail or Lob account, self-host the whole gateway, or chain providers for failover. The managed service is a convenience, not a cage.
@@ -49,7 +48,7 @@ You're letting software put paper in mailboxes and spend money doing it. Read th
 
 ## Status
 
-Early. US-only today. Letters, certified letters, and postcards. The managed API, MCP server, self-host gateway, and Click2Mail/Lob adapters are live; additional adapters (PostGrid, Stannp) are the current roadmap — [CONTRIBUTING.md](CONTRIBUTING.md) has the adapter guide if you want one sooner.
+Early. US-only today. Letters, certified letters, and postcards. The managed API, MCP server, self-host gateway, and Click2Mail/Lob adapters are live; additional adapters (PostGrid, Stannp) are next — [CONTRIBUTING.md](CONTRIBUTING.md) has the adapter guide if you want one sooner.
 
 ## License
 
