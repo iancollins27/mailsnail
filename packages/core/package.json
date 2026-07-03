@@ -1,0 +1,42 @@
+{
+  "name": "@mailsnail/core",
+  "version": "0.1.0",
+  "description": "Provider-agnostic core for sending physical mail: one interface, swappable adapters (Click2Mail, Lob, any Mailsnail gateway), multi-provider failover. Zero dependencies.",
+  "type": "module",
+  "main": "src/index.js",
+  "exports": {
+    ".": "./src/index.js"
+  },
+  "files": [
+    "src",
+    "README.md"
+  ],
+  "scripts": {
+    "test": "node --test"
+  },
+  "keywords": [
+    "physical-mail",
+    "direct-mail",
+    "snail-mail",
+    "letters",
+    "postcards",
+    "certified-mail",
+    "usps",
+    "click2mail",
+    "lob",
+    "provider-agnostic",
+    "failover",
+    "mailsnail"
+  ],
+  "author": "Ian Collins",
+  "homepage": "https://mailsnail.dev",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/iancollins27/mailsnail.git",
+    "directory": "packages/core"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "license": "MIT"
+}
