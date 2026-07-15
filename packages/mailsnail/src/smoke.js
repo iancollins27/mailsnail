@@ -72,8 +72,8 @@ async function smokeOne(envOverrides, expectProviderInLog) {
     send("notifications/initialized", {});
     const toolsResp = await send("tools/list", {}, 2);
     const tools = toolsResp.result?.tools ?? [];
-    if (tools.length !== 7) {
-      throw new Error(`expected 7 tools, got ${tools.length}`);
+    if (tools.length !== 9) {
+      throw new Error(`expected 9 tools, got ${tools.length}`);
     }
     if (!stderrBuf.includes(expectProviderInLog)) {
       throw new Error(
