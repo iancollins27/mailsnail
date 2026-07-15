@@ -16,7 +16,7 @@
 import { ProviderError, NotSupported } from "../errors.js";
 
 export class GatewayProvider {
-  constructor({ baseUrl, name = "managed" } = {}) {
+  constructor({ baseUrl, name = "managed", apiKey } = {}) {
     if (!baseUrl) {
       throw new Error(
         "baseUrl is required for the gateway provider (e.g. https://api.mailsnail.dev or your self-hosted gateway).",
@@ -24,6 +24,10 @@ export class GatewayProvider {
     }
     this.baseUrl = baseUrl.replace(/\/$/, "");
     this._name = name;
+    // Optional managed-account API key. When set, requests carry
+    // `Authorization: Bearer <key>` so the server can debit the account's prepaid
+    // balance (no payment_token needed). Absent → anonymous per-piece, as before.
+    this._apiKey = apiKey || undefined;
   }
 
   get name() {
@@ -39,7 +43,11 @@ export class GatewayProvider {
     const url = `${this.baseUrl}${path}`;
     const init = {
       method,
-      headers: { Accept: "application/json", ...(headers ?? {}) },
+      headers: {
+        Accept: "application/json",
+        ...(this._apiKey ? { Authorization: `Bearer ${this._apiKey}` } : {}),
+        ...(headers ?? {}),
+      },
     };
     if (body !== undefined) {
       init.headers["Content-Type"] = "application/json";
@@ -80,6 +88,19 @@ export class GatewayProvider {
         next_step:
           'Mint a Stripe Shared Payment Token (SPT) for the quoted amount and call the tool again with `payment_token: "spt_..."`.',
       };
+      // When the server runs in balance mode, the 402 also carries a `balance`
+      // block: the agent can top up (cheap, amortized fee) and retry with no token,
+      // instead of paying per-piece. Surface it so callers/tools can act on it.
+      const bal = r.body?.balance;
+      if (bal) {
+        err.payment_required.balance_cents = bal.account_balance_cents;
+        err.payment_required.shortfall_cents = bal.shortfall_cents;
+        err.payment_required.topup = bal.topup;
+        err.payment_required.next_step =
+          `Prepaid balance ${bal.account_balance_cents}¢ is short ${bal.shortfall_cents}¢. ` +
+          `Either top up via top_up({ amount_cents }) and retry with no payment_token, ` +
+          `or pay this piece per-piece by minting an SPT and passing payment_token.`;
+      }
       return err;
     }
     const detail = r.body?.mail_error
@@ -158,6 +179,51 @@ export class GatewayProvider {
       mode: "LIVE",
       raw: r.body,
     };
+  }
+
+  // ── Prepaid balance (managed only; requires an API key) ────────────────────
+
+  async getBalance() {
+    this._requireApiKey("getBalance");
+    const r = await this._request("GET", "/v1/balance");
+    if (r.status >= 400) {
+      throw new ProviderError(r.body?.error ?? `gateway ${r.status}`, {
+        provider: this._name,
+        status: r.status,
+        body: r.body,
+        safeToRetry: true,
+      });
+    }
+    return r.body; // { balance_cents, currency, status, auto_reload_enabled }
+  }
+
+  async topUp({ amount_cents, method, payment_token } = {}) {
+    this._requireApiKey("topUp");
+    const body = { amount_cents };
+    if (method) body.method = method;
+    if (payment_token) body.payment_token = payment_token;
+    const r = await this._request("POST", "/v1/topups", { body });
+    // 402 here means "mint an SPT for the top-up amount and retry" — surface it
+    // through the same structured payment_required path as a send.
+    if (r.status === 402) throw this._sendError(r);
+    if (r.status >= 400) {
+      throw new ProviderError(r.body?.message ?? r.body?.error ?? `gateway ${r.status}`, {
+        provider: this._name,
+        status: r.status,
+        body: r.body,
+        safeToRetry: false,
+      });
+    }
+    return r.body; // { status:"succeeded", balance_cents, payment_intent_id } | { status:"pending", ... }
+  }
+
+  _requireApiKey(op) {
+    if (!this._apiKey) {
+      throw new ProviderError(
+        `${op} requires a managed account API key. Set MAILSNAIL_API_KEY (mint one via POST /v1/accounts).`,
+        { provider: this._name, status: 401 },
+      );
+    }
   }
 
   async getLetter(id) {

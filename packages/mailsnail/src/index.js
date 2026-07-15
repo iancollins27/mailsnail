@@ -164,7 +164,7 @@ server.tool(
       .string()
       .optional()
       .describe(
-        "Stripe Shared Payment Token (spt_...). Required when MAIL_PROVIDER=managed. If omitted in managed mode, the tool returns a payment_required error with the quoted price so you can mint an SPT and retry.",
+        "Stripe Shared Payment Token (spt_...). OPTIONAL: if your managed account has a prepaid balance (see get_balance/top_up), the piece is debited from it automatically and no payment_token is needed. Provide one to pay this piece one-off instead. If omitted with no/insufficient balance, you get a payment_required error offering top-up OR per-piece payment.",
       ),
   },
   async (input) => {
@@ -191,13 +191,55 @@ server.tool(
       .string()
       .optional()
       .describe(
-        "Stripe Shared Payment Token (spt_...). Required when MAIL_PROVIDER=managed. If omitted in managed mode, the tool returns a payment_required error with the quoted price so you can mint an SPT and retry.",
+        "Stripe Shared Payment Token (spt_...). OPTIONAL: if your managed account has a prepaid balance (see get_balance/top_up), the piece is debited from it automatically and no payment_token is needed. Provide one to pay this piece one-off instead. If omitted with no/insufficient balance, you get a payment_required error offering top-up OR per-piece payment.",
       ),
   },
   async (input) => {
     try {
       checkSpend("postcard");
       return ok(await provider.sendPostcard(input));
+    } catch (err) {
+      return fail(err);
+    }
+  },
+);
+
+server.tool(
+  "get_balance",
+  "Get your managed prepaid balance (in cents). Managed mode with a MAILSNAIL_API_KEY only. When you hold a balance, send_letter/send_postcard debit it automatically with no payment_token and no per-send Stripe fee.",
+  {},
+  async () => {
+    try {
+      if (typeof provider.getBalance !== "function") {
+        throw new NotSupported(provider.name, "getBalance");
+      }
+      return ok(await provider.getBalance());
+    } catch (err) {
+      return fail(err);
+    }
+  },
+);
+
+server.tool(
+  "top_up",
+  "Add funds to your managed prepaid balance. `method` defaults to 'stripe.spt': pass a `payment_token` (spt_...) minted for `amount_cents` to credit instantly. Without a payment_token you get a payment_required challenge quoting the amount to mint an SPT for. 'stripe.ach'/'x402' are async/returned as pending. Managed mode with a MAILSNAIL_API_KEY only.",
+  {
+    amount_cents: z.number().int().positive().describe("Top-up amount in USD cents (e.g. 5000 = $50)."),
+    method: z
+      .enum(["stripe.spt", "stripe.ach", "x402"])
+      .optional()
+      .describe("Funding rail. Defaults to stripe.spt (card via Shared Payment Token)."),
+    payment_token: z
+      .string()
+      .optional()
+      .describe("Stripe Shared Payment Token (spt_...) minted for amount_cents. Required for stripe.spt to credit instantly."),
+  },
+  async (input) => {
+    try {
+      if (typeof provider.topUp !== "function") {
+        throw new NotSupported(provider.name, "topUp");
+      }
+      return ok(await provider.topUp(input));
     } catch (err) {
       return fail(err);
     }

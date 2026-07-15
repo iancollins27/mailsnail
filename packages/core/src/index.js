@@ -10,6 +10,7 @@ export {
   DEFAULT_MANAGED_URL,
   LobProvider,
   Click2MailProvider,
+  DirectMailManagerProvider,
   GatewayProvider,
   FailoverProvider,
 } from "./providers/index.js";
