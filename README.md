@@ -1,3 +1,5 @@
+<img src="assets/logo.png" width="120" alt="Mailsnail" />
+
 # Mailsnail
 
 [![smoke](https://github.com/iancollins27/mailsnail/actions/workflows/smoke.yml/badge.svg)](https://github.com/iancollins27/mailsnail/actions/workflows/smoke.yml)
