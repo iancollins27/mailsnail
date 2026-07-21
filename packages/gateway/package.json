@@ -1,6 +1,6 @@
 {
   "name": "@mailsnail/gateway",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Self-hostable physical-mail REST API: bring your own print-provider credentials (Click2Mail, Lob, or a failover chain), get /v1/verify, /v1/preview, /v1/letters, /v1/postcards with server-side text-to-PDF rendering. The open half of Mailsnail's managed API.",
   "type": "module",
   "main": "src/app.js",
@@ -43,7 +43,7 @@
     "node": ">=18"
   },
   "dependencies": {
-    "@mailsnail/core": "^0.1.0",
+    "@mailsnail/core": "^0.2.0",
     "express": "^4.19.2",
     "pdfkit": "^0.15.0"
   },

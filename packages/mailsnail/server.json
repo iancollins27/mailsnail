@@ -3,7 +3,7 @@
   "name": "io.github.iancollins27/mailsnail",
   "description": "Send USPS letters, postcards & certified mail from any agent. No signup; pay-per-piece via Stripe.",
   "status": "active",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "websiteUrl": "https://mailsnail.dev",
   "repository": {
     "url": "https://github.com/iancollins27/mailsnail",
@@ -14,7 +14,7 @@
       "registryType": "npm",
       "registryBaseUrl": "https://registry.npmjs.org",
       "identifier": "mailsnail",
-      "version": "0.6.0",
+      "version": "0.7.0",
       "transport": {
         "type": "stdio"
       },

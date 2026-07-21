@@ -1,7 +1,7 @@
 {
   "name": "mailsnail",
   "mcpName": "io.github.iancollins27/mailsnail",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "description": "Send physical mail (USPS letters, postcards, certified mail) from AI agents. MCP server with managed mode (no signup, pay-per-piece via Stripe Link), self-hosted gateway, Click2Mail BYOK, Lob BYOK, and multi-provider failover. Powers Mailsnail.",
   "type": "module",
   "bin": {
@@ -55,7 +55,7 @@
     "node": ">=18"
   },
   "dependencies": {
-    "@mailsnail/core": "^0.1.0",
+    "@mailsnail/core": "^0.2.0",
     "@modelcontextprotocol/sdk": "^1.0.0",
     "zod": "^3.23.8"
   },

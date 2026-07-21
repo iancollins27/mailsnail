@@ -1,6 +1,6 @@
 {
   "name": "@mailsnail/core",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Provider-agnostic core for sending physical mail: one interface, swappable adapters (Click2Mail, Lob, any Mailsnail gateway), multi-provider failover. Zero dependencies.",
   "type": "module",
   "main": "src/index.js",
