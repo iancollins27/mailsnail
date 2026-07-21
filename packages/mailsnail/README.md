@@ -12,7 +12,7 @@ agent  ──tools──>  mailsnail  ──HTTPS──>  gateway (Stripe + prin
 
 ## Why this exists
 
-There's already a Lob MCP that exposes ~76 tools across every Lob resource. That's great for full coverage. This one is the opposite: **7 focused tools**, designed for the way agents actually use mail.
+There's already a Lob MCP that exposes ~76 tools across every Lob resource. That's great for full coverage. This one is the opposite: **10 focused tools**, designed for the way agents actually use mail.
 
 The big differentiator: **the default `managed` provider needs no account**. Agents pay per piece via Stripe Shared Payment Tokens (SPT) — works with [Stripe Link](https://stripe.com/link) wallets, the [link-cli](https://github.com/stripe/link-cli), and any agent runtime that supports the [Machine Payments Protocol](https://docs.stripe.com/payments/machine/mpp). No signup, no prepaid balance, no API keys to provision.
 
@@ -125,10 +125,13 @@ For Lob, `MAIL_MCP_ALLOW_LIVE=1` is also required to start with a `live_` key. F
 
 | Tool | What it does |
 |---|---|
+| `doctor` | Preflight connectivity check against the configured backend. Free, read-only, never mails. Reports exactly which `host:port` to allowlist when a sandbox or corporate proxy is in the way. Also a CLI: `npx mailsnail doctor`. |
 | `verify_address` | Validate + normalize a US address. Free on Lob; on Click2Mail uses CASS via a one-shot address list. |
 | `preview_letter` | Proof PDF + exact price WITHOUT charging or mailing. Recommended first step; returns a `draft_id` you confirm with `send_letter`. Managed/gateway mode. |
 | `send_letter` | Send a letter from plain text (managed/gateway renders the PDF) or a public PDF URL. `extra_service: 'certified'` for certified mail. |
 | `send_postcard` | Send a 4×6 / 6×9 / 6×11 postcard from a PDF URL. |
+| `get_balance` | Prepaid balance on a managed account (needs `MAILSNAIL_API_KEY`). |
+| `top_up` | Add funds to that balance — cheaper than per-piece once you send regularly. |
 | `get_letter` | Fetch status of a previously sent letter/job. |
 | `list_letters` | List recent letters (Lob only). |
 | `cancel_letter` | Cancel before production. Cancellation windows are short and provider-specific. |
@@ -149,6 +152,37 @@ Embedding a PDF renderer in an `npx`-distributed server is a bad fit (puppeteer 
 | `LOB_API_KEY` | — | Lob API key. `test_*` is free; `live_*` actually mails. |
 | `MAIL_MCP_ALLOW_LIVE` | `0` | Must be `1` to actually mail. Default is dry-run. |
 | `MAIL_MCP_SPEND_CAP_USD` | `25` | Per-session estimated spend cap. Server refuses sends past this. |
+| `MAILSNAIL_API_KEY` | — | Managed account key. Sends debit your prepaid balance instead of needing a per-piece `payment_token`. |
+| `HTTPS_PROXY` / `HTTP_PROXY` / `NO_PROXY` | — | Corporate proxy. Needs `NODE_USE_ENV_PROXY=1` or `undici` installed — see [Running behind an egress proxy](#running-behind-an-egress-proxy-or-allowlist). |
+| `NODE_EXTRA_CA_CERTS` | — | CA bundle for a TLS-inspecting proxy. |
+
+## Running behind an egress proxy or allowlist
+
+Sandboxed agents (CI runners, enterprise agent platforms, hosted agent sessions) usually sit behind an egress allowlist. Check before you try to mail anything:
+
+```bash
+npx mailsnail doctor          # human-readable
+npx mailsnail doctor --json   # same report, machine-readable
+```
+
+It reports the provider, the hosts it needs, DNS, proxy status, and reachability — and exits non-zero when something is in the way. It never sends mail and never charges.
+
+Agents can call the same check as the `doctor` MCP tool.
+
+**Hosts to permit** (port 443, TCP / HTTPS `CONNECT`): `api.mailsnail.dev` in managed mode; `rest.click2mail.com` or `api.lob.com` in BYOK mode; your own host in gateway mode. Allowlist by hostname — managed-gateway IPs are not static.
+
+**Through an HTTP proxy:** Node's `fetch` ignores `HTTPS_PROXY` by default, so an allowlisted host can still time out silently. Set `NODE_USE_ENV_PROXY=1` (Node ≥ 22.21), or `npm i undici` next to `mailsnail` and it routes through `HTTPS_PROXY`/`HTTP_PROXY`/`ALL_PROXY` itself (respecting `NO_PROXY`). For a TLS-inspecting proxy, set `NODE_EXTRA_CA_CERTS` to your CA bundle.
+
+**Reading the error.** When a request dies in transport, the tool result carries a `code`:
+
+| `code` | Means | Do |
+|---|---|---|
+| `egress_blocked` | Something in between answered — proxy, firewall, allowlist. The backend never saw it. | Allow the `host:port` in the message. |
+| `unreachable` | DNS/TCP never completed (refused, timed out, unresolvable). | Same, or fix `MAIL_API_BASE_URL`. |
+| `tls_untrusted` | TLS handshake rejected — usually an inspecting proxy's CA. | Set `NODE_EXTRA_CA_CERTS`. |
+| `gateway_unavailable` | Reached something that answered like a broken hop. | Retry; run `doctor`. |
+
+All of these mean **nothing mailed and nothing was charged** — the fix is network policy, not your account or your letter. A plain `gateway 403` with no `code`, by contrast, really is the backend rejecting the request.
 
 ## Safety notes
 

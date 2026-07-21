@@ -62,6 +62,11 @@ export class Click2MailProvider {
     return this.allowLive;
   }
 
+  // Hosts this adapter must reach — see `mailsnail doctor`.
+  get endpoints() {
+    return [{ url: C2M_BASE_URL, purpose: "Click2Mail REST API" }];
+  }
+
   _authHeader() {
     return (
       "Basic " +

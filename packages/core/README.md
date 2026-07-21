@@ -41,8 +41,20 @@ const mail = new FailoverProvider([
 - **Validation** — `validateAddress` / `validateLetterRequest` /
   `validatePostcardRequest`, implementing the repo-level
   [mail-piece spec](../../spec/).
-- **Errors** — `ProviderError` (with `provider`, `status`, `safeToRetry`) and
-  `NotSupported`.
+- **Errors** — `ProviderError` (with `provider`, `status`, `safeToRetry`, and —
+  for transport failures — a `code` from `ERROR_CODES` plus an actionable
+  `hint`) and `NotSupported`.
+- **`diagnose()` / `formatDiagnosis()`** — preflight connectivity check behind
+  `npx mailsnail doctor`. Config, DNS, proxy status, and reachability of every
+  host the configured provider needs, with the exact `host:port` to allowlist.
+  Reads only; never mails, never charges.
+
+A request that dies in transport is reported as such rather than as a provider
+rejection: `egress_blocked` (a proxy/firewall answered instead of the provider),
+`unreachable` (DNS/TCP never completed), or `tls_untrusted` (an inspecting proxy's
+CA). All three mean nothing mailed and no money moved. Set `NODE_USE_ENV_PROXY=1`
+(Node ≥ 22.21) or install the optional `undici` peer to route through
+`HTTPS_PROXY`.
 
 Live mail is opt-in everywhere: nothing mails or bills unless the adapter was
 constructed with `allowLive: true` (env: `MAIL_ALLOW_LIVE=1`).

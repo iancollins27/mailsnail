@@ -27,6 +27,11 @@ export class LobProvider {
     return this.apiKey.startsWith("live_");
   }
 
+  // Hosts this adapter must reach — see `mailsnail doctor`.
+  get endpoints() {
+    return [{ url: LOB_BASE_URL, purpose: "Lob API" }];
+  }
+
   async _request(method, path, body, { mutation = false } = {}) {
     const url = `${LOB_BASE_URL}${path}`;
     const auth = Buffer.from(`${this.apiKey}:`).toString("base64");

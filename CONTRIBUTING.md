@@ -8,7 +8,7 @@ Small PRs land fast; open an issue first for anything structural.
 | Package | What it is |
 |---|---|
 | [`packages/core`](packages/core) | `@mailsnail/core` — provider interface, adapters (Click2Mail, Lob, gateway client), failover router, request validation. Zero dependencies. |
-| [`packages/mailsnail`](packages/mailsnail) | The `mailsnail` MCP server (`npx -y mailsnail`) — 7 tools over any core provider. |
+| [`packages/mailsnail`](packages/mailsnail) | The `mailsnail` MCP server (`npx -y mailsnail`) — 10 tools over any core provider. |
 | [`spec/`](spec) | The provider-neutral mail-piece schema and the failover-safety contract. |
 
 ```bash
@@ -24,6 +24,7 @@ Adapters live in `packages/core/src/providers/`. An adapter is a class with:
 constructor({ ...credentials, allowLive? })
 get name(): string            // lowercase, stable — used in env config and error payloads
 get isLive(): boolean         // true only when real mail can move
+get endpoints(): [{ url, purpose }]   // hosts you must reach; powers `mailsnail doctor`
 verifyAddress(input)          // -> verify_result (see spec/)
 sendLetter(input)             // -> send_result
 sendPostcard(input)           // -> send_result           (optional)
@@ -51,7 +52,15 @@ router uses this to move on to the next provider.
    from the provider. Put the untranslated response in `raw`.
 4. **No new dependencies in core.** Adapters use global `fetch` (Node 18+).
    Heavy things (PDF rendering, HTTP servers) belong in other packages.
-5. **Preserve empirical provider knowledge in comments.** SKU strings,
+   (`undici` is an *optional* peer used only to route through `HTTPS_PROXY`;
+   everything must work when it's absent.)
+5. **A blocked request is not a rejected one.** Agents run behind egress
+   allowlists. When the transport fails, or a 4xx comes back with no JSON body,
+   say so with a `code` from `ERROR_CODES` and name the `host:port` to allow —
+   don't report it as the provider rejecting the request. See
+   `packages/core/src/net.js`, and expose `endpoints` so `mailsnail doctor` can
+   check your hosts.
+6. **Preserve empirical provider knowledge in comments.** SKU strings,
    undocumented status codes, support-ticket findings — the comment is often
    worth more than the code around it.
 

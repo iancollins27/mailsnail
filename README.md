@@ -21,7 +21,7 @@ claude mcp add mailsnail -- npx -y mailsnail
 
 | Package | What it is |
 |---|---|
-| [`mailsnail`](packages/mailsnail) | MCP server — 7 tools (`verify_address`, `preview_letter`, `send_letter`, `send_postcard`, `get_letter`, `list_letters`, `cancel_letter`) over any provider below. Works in Claude Code, Claude Desktop, Cursor, Codex CLI, OpenAI Agents SDK. |
+| [`mailsnail`](packages/mailsnail) | MCP server — 10 tools (`doctor`, `verify_address`, `preview_letter`, `send_letter`, `send_postcard`, `get_balance`, `top_up`, `get_letter`, `list_letters`, `cancel_letter`) over any provider below. Works in Claude Code, Claude Desktop, Cursor, Codex CLI, OpenAI Agents SDK. |
 | [`@mailsnail/core`](packages/core) | Provider-agnostic core: adapters (Click2Mail, Lob, any Mailsnail gateway), multi-provider failover router, request validation. Zero dependencies. |
 | [`@mailsnail/gateway`](packages/gateway) | Self-hostable REST API: BYO provider credentials, `body_text`→PDF rendering, proofs, invocation logging. The managed service at `api.mailsnail.dev` runs the same wire protocol. |
 | [`spec/`](spec) | The provider-neutral mail-piece schema + the failover-safety contract. Implement it and anything — including a print shop — becomes a Mailsnail-compatible node. |
@@ -36,6 +36,38 @@ claude mcp add mailsnail -- npx -y mailsnail
 | **failover chain** | yours, per provider | your provider accounts | mail that must not miss deadlines |
 
 Failover is deliberately conservative: a send moves to the next provider **only** when the failed provider guarantees nothing entered production and no money moved (`safeToRetry` — see [the spec](spec/README.md)). A duplicate certified letter is worse than an error.
+
+## Running behind an egress proxy or allowlist
+
+Sandboxed agents — CI runners, enterprise agent platforms, hosted agent sessions — usually sit behind an egress allowlist, and that is the environment managed mode is *for*. Two minutes of setup:
+
+```bash
+npx mailsnail doctor      # says exactly what it can and can't reach, and why. Free; never mails.
+```
+
+**Allow this host:**
+
+| Mode | Host to permit | Port |
+|---|---|---|
+| managed (default) | `api.mailsnail.dev` | 443 (TCP / HTTPS `CONNECT`) |
+| self-hosted gateway | whatever `MAIL_API_BASE_URL` points at | its port |
+| click2mail (BYOK) | `rest.click2mail.com` | 443 |
+| lob (BYOK) | `api.lob.com` | 443 |
+
+Allowlist by **hostname**, not IP: the managed gateway runs on managed infrastructure and its addresses change without notice. If your policy is IP-only, self-host [`@mailsnail/gateway`](packages/gateway) on an address you control — that escape hatch is the whole point of the open provider layer.
+
+**Through an HTTP proxy.** Node's `fetch` ignores `HTTPS_PROXY` unless you tell it not to, so an allowlisted gateway can still time out silently. Either:
+
+```bash
+export NODE_USE_ENV_PROXY=1        # Node >= 22.21
+export HTTPS_PROXY=http://proxy.example:8080
+```
+
+or install `undici` alongside `mailsnail` (`npm i undici`) and Mailsnail routes through `HTTPS_PROXY`/`HTTP_PROXY`/`ALL_PROXY` itself, honoring `NO_PROXY`. `mailsnail doctor` tells you which of these is actually in effect.
+
+**TLS-inspecting proxy?** Point `NODE_EXTRA_CA_CERTS` at your organization's CA bundle.
+
+**When it's blocked anyway**, the failure says so instead of guessing: transport errors carry a `code` of `unreachable`, `egress_blocked`, or `tls_untrusted`, plus the exact `host:port` to permit. Any of those codes means the request never reached the backend — nothing mailed, nothing was charged, and the fix is network policy, not your account.
 
 ## Safety
 

@@ -35,6 +35,14 @@ export class FailoverProvider {
     return this.providers.some((p) => p.isLive);
   }
 
+  // Every host in the chain has to be reachable for failover to mean anything,
+  // so the doctor checks all of them.
+  get endpoints() {
+    return this.providers.flatMap((p) =>
+      (p.endpoints ?? []).map((e) => ({ ...e, provider: p.name })),
+    );
+  }
+
   _shouldFailover(err, kind) {
     if (err instanceof NotSupported || err?.name === "NotSupported") return true;
     if (kind === "read") return true;

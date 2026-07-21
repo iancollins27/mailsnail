@@ -72,8 +72,8 @@ async function smokeOne(envOverrides, expectProviderInLog) {
     send("notifications/initialized", {});
     const toolsResp = await send("tools/list", {}, 2);
     const tools = toolsResp.result?.tools ?? [];
-    if (tools.length !== 9) {
-      throw new Error(`expected 9 tools, got ${tools.length}`);
+    if (tools.length !== 10) {
+      throw new Error(`expected 10 tools, got ${tools.length}`);
     }
     if (!stderrBuf.includes(expectProviderInLog)) {
       throw new Error(
@@ -132,6 +132,39 @@ const cases = [
   },
 ];
 
+// `mailsnail doctor` against a port nothing listens on: offline, deterministic,
+// and it proves the thing this check exists for — an unreachable backend is
+// reported as unreachable, with the host:port to allowlist.
+async function smokeDoctor() {
+  const child = spawn(process.execPath, [SERVER, "doctor", "--json"], {
+    env: {
+      ...process.env,
+      MAIL_PROVIDER: "managed",
+      MAIL_API_BASE_URL: "http://127.0.0.1:1",
+      HTTPS_PROXY: "",
+      https_proxy: "",
+      HTTP_PROXY: "",
+      http_proxy: "",
+    },
+    stdio: ["ignore", "pipe", "pipe"],
+  });
+  let out = "";
+  child.stdout.on("data", (d) => (out += d.toString("utf8")));
+  const code = await new Promise((resolve) => child.on("close", resolve));
+
+  const report = JSON.parse(out);
+  if (code !== 1) throw new Error(`expected exit 1 for an unreachable gateway, got ${code}`);
+  if (report.ok !== false) throw new Error("expected report.ok === false");
+  const reach = report.checks.find((c) => c.name.endsWith("reach"));
+  if (reach?.code !== "unreachable") {
+    throw new Error(`expected an unreachable reach check, got ${JSON.stringify(reach)}`);
+  }
+  if (!report.allowlist.includes("127.0.0.1:1")) {
+    throw new Error(`expected allowlist to name the host:port, got ${report.allowlist}`);
+  }
+  return report;
+}
+
 let exitCode = 0;
 for (const c of cases) {
   try {
@@ -143,4 +176,13 @@ for (const c of cases) {
     exitCode = 1;
   }
 }
+
+try {
+  const report = await smokeDoctor();
+  console.log(`✔ doctor CLI: ${report.summary}`);
+} catch (err) {
+  console.error(`✘ doctor CLI: ${err.message}`);
+  exitCode = 1;
+}
+
 process.exit(exitCode);

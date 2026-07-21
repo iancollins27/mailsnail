@@ -55,6 +55,11 @@ export class DirectMailManagerProvider {
     return !this.sandbox;
   }
 
+  // Hosts this adapter must reach — see `mailsnail doctor`.
+  get endpoints() {
+    return [{ url: this.baseUrl, purpose: "Direct Mail Manager API" }];
+  }
+
   async _request(method, path, body, { mutation = false } = {}) {
     const url = `${this.baseUrl}${path}`;
     const init = {

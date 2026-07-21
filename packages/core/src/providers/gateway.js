@@ -14,9 +14,15 @@
 //   3. charge happens, mail goes out; failed mail auto-refunds
 
 import { ProviderError, NotSupported } from "../errors.js";
+import {
+  classifyBlockedResponse,
+  describeTransportError,
+  resolveProxyDispatcher,
+  targetOf,
+} from "../net.js";
 
 export class GatewayProvider {
-  constructor({ baseUrl, name = "managed", apiKey } = {}) {
+  constructor({ baseUrl, name = "managed", apiKey, env, fetch: fetchImpl } = {}) {
     if (!baseUrl) {
       throw new Error(
         "baseUrl is required for the gateway provider (e.g. https://api.mailsnail.dev or your self-hosted gateway).",
@@ -28,10 +34,28 @@ export class GatewayProvider {
     // `Authorization: Bearer <key>` so the server can debit the account's prepaid
     // balance (no payment_token needed). Absent → anonymous per-piece, as before.
     this._apiKey = apiKey || undefined;
+    // Kept for network diagnosis (proxy vars, CA bundle) and for tests.
+    this._env = env ?? (typeof process !== "undefined" ? process.env : {});
+    this._fetch = fetchImpl ?? ((...args) => fetch(...args));
   }
 
   get name() {
     return this._name;
+  }
+
+  /**
+   * Hosts this provider must be able to reach, for `mailsnail doctor` and for
+   * anyone writing an egress allowlist. `/healthz` is unauthenticated and free.
+   */
+  get endpoints() {
+    return [
+      {
+        url: `${this.baseUrl}/healthz`,
+        purpose: `${this._name} gateway`,
+        target: targetOf(this.baseUrl),
+        expectJson: true,
+      },
+    ];
   }
   // The gateway gates "live" mode itself; from the client's perspective we
   // treat it as live (real money can move on each successful managed send).
@@ -53,14 +77,27 @@ export class GatewayProvider {
       init.headers["Content-Type"] = "application/json";
       init.body = JSON.stringify(body);
     }
+    // Route through the environment's proxy when one is configured and usable.
+    // No-op in the common case; see net.js for why this isn't automatic.
+    const proxy = await resolveProxyDispatcher(this._env, url);
+    if (proxy.dispatcher) init.dispatcher = proxy.dispatcher;
+
     let res;
     try {
-      res = await fetch(url, init);
+      res = await this._fetch(url, init);
     } catch (netErr) {
-      throw new ProviderError(
-        `${this._name} gateway network error: ${netErr.message}`,
-        { provider: this._name, safeToRetry: false },
-      );
+      // The request never made it out. Say which host to allow rather than
+      // "network error" — in a sandbox that distinction is the whole fix.
+      const d = describeTransportError({ url, error: netErr, env: this._env });
+      throw new ProviderError(`${this._name}: ${d.message}`, {
+        provider: this._name,
+        code: d.code,
+        hint: d.hint,
+        // True only when the failure provably predates transmission (DNS,
+        // connect, TLS). A reset or mid-flight timeout is ambiguous and must
+        // not fail over — see describeTransportError.
+        safeToRetry: d.safeToRetry,
+      });
     }
     const text = await res.text();
     let parsed;
@@ -69,7 +106,34 @@ export class GatewayProvider {
     } catch {
       parsed = text;
     }
-    return { status: res.status, headers: res.headers, body: parsed };
+    return { status: res.status, headers: res.headers, body: parsed, url };
+  }
+
+  /**
+   * A 4xx/5xx that carries no JSON body did not come from the gateway — the
+   * gateway always answers with JSON. Every error path routes through here so
+   * an egress proxy's bare 403 can never be reported as an account rejection.
+   * Returns null when the response really is the gateway's own.
+   */
+  _blockedError(r) {
+    const blocked = classifyBlockedResponse({
+      status: r.status,
+      headers: r.headers,
+      body: r.body,
+      url: r.url ?? this.baseUrl,
+      env: this._env,
+    });
+    if (!blocked) return null;
+    return new ProviderError(`${this._name}: ${blocked.message}`, {
+      provider: this._name,
+      status: r.status,
+      body: r.body,
+      code: blocked.code,
+      hint: blocked.hint,
+      // Set by the classifier, and conservative: only a hop that provably never
+      // forwarded the request (407, 511) is safe to fail over from.
+      safeToRetry: blocked.safeToRetry === true,
+    });
   }
 
   _sendError(r) {
@@ -103,6 +167,8 @@ export class GatewayProvider {
       }
       return err;
     }
+    const blocked = this._blockedError(r);
+    if (blocked) return blocked;
     const detail = r.body?.mail_error
       ? `${r.body.error}: ${r.body.mail_error}`
       : (r.body?.error ?? `gateway ${r.status}`);
@@ -119,15 +185,24 @@ export class GatewayProvider {
     return e;
   }
 
-  async verifyAddress(input) {
-    const r = await this._request("POST", "/v1/verify", { body: input });
-    if (r.status >= 400) {
-      throw new ProviderError(r.body?.error ?? `gateway ${r.status}`, {
+  // Read paths (verify/preview/get/balance) all fail over freely, so they share
+  // one error shape — with the interception check in front of it.
+  _readError(r, message) {
+    return (
+      this._blockedError(r) ??
+      new ProviderError(message, {
         provider: this._name,
         status: r.status,
         body: r.body,
         safeToRetry: true,
-      });
+      })
+    );
+  }
+
+  async verifyAddress(input) {
+    const r = await this._request("POST", "/v1/verify", { body: input });
+    if (r.status >= 400) {
+      throw this._readError(r, r.body?.error ?? `gateway ${r.status}`);
     }
     return r.body;
   }
@@ -136,9 +211,9 @@ export class GatewayProvider {
     const { payment_token, draft_id, ...rest } = input;
     const r = await this._request("POST", "/v1/preview", { body: rest });
     if (r.status >= 400) {
-      throw new ProviderError(
+      throw this._readError(
+        r,
         r.body?.message ?? r.body?.error ?? `gateway ${r.status}`,
-        { provider: this._name, status: r.status, body: r.body, safeToRetry: true },
       );
     }
     return r.body;
@@ -187,12 +262,7 @@ export class GatewayProvider {
     this._requireApiKey("getBalance");
     const r = await this._request("GET", "/v1/balance");
     if (r.status >= 400) {
-      throw new ProviderError(r.body?.error ?? `gateway ${r.status}`, {
-        provider: this._name,
-        status: r.status,
-        body: r.body,
-        safeToRetry: true,
-      });
+      throw this._readError(r, r.body?.error ?? `gateway ${r.status}`);
     }
     return r.body; // { balance_cents, currency, status, auto_reload_enabled }
   }
@@ -207,12 +277,15 @@ export class GatewayProvider {
     // through the same structured payment_required path as a send.
     if (r.status === 402) throw this._sendError(r);
     if (r.status >= 400) {
-      throw new ProviderError(r.body?.message ?? r.body?.error ?? `gateway ${r.status}`, {
-        provider: this._name,
-        status: r.status,
-        body: r.body,
-        safeToRetry: false,
-      });
+      throw (
+        this._blockedError(r) ??
+        new ProviderError(r.body?.message ?? r.body?.error ?? `gateway ${r.status}`, {
+          provider: this._name,
+          status: r.status,
+          body: r.body,
+          safeToRetry: false,
+        })
+      );
     }
     return r.body; // { status:"succeeded", balance_cents, payment_intent_id } | { status:"pending", ... }
   }
@@ -229,12 +302,7 @@ export class GatewayProvider {
   async getLetter(id) {
     const r = await this._request("GET", `/v1/letters/${encodeURIComponent(id)}`);
     if (r.status >= 400) {
-      throw new ProviderError(r.body?.error ?? `gateway ${r.status}`, {
-        provider: this._name,
-        status: r.status,
-        body: r.body,
-        safeToRetry: true,
-      });
+      throw this._readError(r, r.body?.error ?? `gateway ${r.status}`);
     }
     return r.body;
   }

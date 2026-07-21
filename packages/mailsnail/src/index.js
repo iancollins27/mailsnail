@@ -3,7 +3,13 @@ import { createRequire } from "node:module";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
-import { createProvider, ProviderError, NotSupported } from "@mailsnail/core";
+import {
+  createProvider,
+  diagnose,
+  formatDiagnosis,
+  ProviderError,
+  NotSupported,
+} from "@mailsnail/core";
 
 const pkg = createRequire(import.meta.url)("../package.json");
 
@@ -16,6 +22,44 @@ const env = {
   MAIL_ALLOW_LIVE:
     process.env.MAIL_MCP_ALLOW_LIVE ?? process.env.MAIL_ALLOW_LIVE,
 };
+
+// CLI subcommands. MCP clients launch this with no arguments and get the stdio
+// server; a human running `npx mailsnail doctor` gets the preflight instead.
+const [command, ...commandArgs] = process.argv.slice(2);
+
+const USAGE = `mailsnail ${pkg.version}
+
+  npx mailsnail             start the MCP server on stdio (what MCP clients do)
+  npx mailsnail doctor      check connectivity to the configured mail backend
+                            (--json for machine-readable output)
+  npx mailsnail --version   print version
+`;
+
+if (command === "doctor") {
+  const report = await diagnose({ env });
+  console.log(
+    commandArgs.includes("--json")
+      ? JSON.stringify(report, null, 2)
+      : formatDiagnosis(report),
+  );
+  process.exit(report.ok ? 0 : 1);
+}
+
+if (command === "help" || command === "--help" || command === "-h") {
+  console.log(USAGE);
+  process.exit(0);
+}
+
+if (command === "--version" || command === "-v") {
+  console.log(pkg.version);
+  process.exit(0);
+}
+
+// A typo'd subcommand must not silently boot a stdio server that then looks hung.
+if (command && !command.startsWith("-")) {
+  console.error(`[mailsnail] unknown command: ${command}\n\n${USAGE}`);
+  process.exit(1);
+}
 
 let provider;
 try {
@@ -63,9 +107,16 @@ function fail(err) {
     error: err.message,
     provider: err instanceof ProviderError ? err.provider : provider.name,
     status: err instanceof ProviderError ? err.status : undefined,
+    // Transport-level flavor (unreachable / egress_blocked / tls_untrusted).
+    // Present means the request never reached the backend: nothing mailed,
+    // nothing charged, and the fix is in this environment's network — not the
+    // account. See the `doctor` tool.
+    code: err.code,
+    hint: err.hint,
     not_supported: err instanceof NotSupported ? err.capability : undefined,
     payment_required: err.payment_required,
   };
+  if (err.code) payload.next_step = "Run the `doctor` tool for a full connectivity report.";
   return {
     isError: true,
     content: [{ type: "text", text: JSON.stringify(payload, null, 2) }],
@@ -76,6 +127,19 @@ const server = new McpServer({
   name: "mailsnail",
   version: pkg.version,
 });
+
+server.tool(
+  "doctor",
+  "Preflight: check that this server can actually reach its mail backend, and report exactly what to allowlist if it can't. FREE and read-only — never charges, never mails. Run this FIRST in sandboxed, CI, or corporate-network environments, and any time another tool fails with a `code` of `unreachable`, `egress_blocked`, or `tls_untrusted` (those mean the request never reached the backend, so the problem is network policy, not the account or the letter).",
+  {},
+  async () => {
+    try {
+      return ok(await diagnose({ env, provider }));
+    } catch (err) {
+      return fail(err);
+    }
+  },
+);
 
 server.tool(
   "verify_address",
