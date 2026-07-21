@@ -79,8 +79,8 @@ export class GatewayProvider {
     }
     // Route through the environment's proxy when one is configured and usable.
     // No-op in the common case; see net.js for why this isn't automatic.
-    const proxy = await resolveProxyDispatcher(this._env, url);
-    if (proxy.dispatcher) init.dispatcher = proxy.dispatcher;
+    const route = await resolveProxyDispatcher(this._env, url);
+    if (route.dispatcher) init.dispatcher = route.dispatcher;
 
     let res;
     try {
@@ -88,7 +88,7 @@ export class GatewayProvider {
     } catch (netErr) {
       // The request never made it out. Say which host to allow rather than
       // "network error" — in a sandbox that distinction is the whole fix.
-      const d = describeTransportError({ url, error: netErr, env: this._env });
+      const d = describeTransportError({ url, error: netErr, env: this._env, route });
       throw new ProviderError(`${this._name}: ${d.message}`, {
         provider: this._name,
         code: d.code,
@@ -106,7 +106,7 @@ export class GatewayProvider {
     } catch {
       parsed = text;
     }
-    return { status: res.status, headers: res.headers, body: parsed, url };
+    return { status: res.status, headers: res.headers, body: parsed, url, route };
   }
 
   /**
@@ -122,6 +122,7 @@ export class GatewayProvider {
       body: r.body,
       url: r.url ?? this.baseUrl,
       env: this._env,
+      route: r.route,
     });
     if (!blocked) return null;
     return new ProviderError(`${this._name}: ${blocked.message}`, {

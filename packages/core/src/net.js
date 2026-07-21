@@ -114,13 +114,30 @@ export function detectProxy(env = {}, url) {
   };
 }
 
-function proxyHint(proxy) {
+/**
+ * The proxy-shaped part of an error message. `route` is what
+ * resolveProxyDispatcher returned, so this can tell the two very different
+ * situations apart: a proxy that is configured but routing nothing (the silent
+ * killer), versus one we are actively routing through that is itself broken.
+ */
+function proxyHint(proxy, route) {
+  if (route?.dispatcher) {
+    return (
+      `Requests are being routed through ${proxy.var}=${proxy.url}; check that the proxy ` +
+      `itself is reachable and permits this destination.`
+    );
+  }
   if (!proxy?.ignored) return null;
   return (
     `${proxy.var} is set (${proxy.url}) but Node's fetch ignores it by default — ` +
     `set NODE_USE_ENV_PROXY=1 (Node >= 22.21), or install \`undici\` alongside ` +
     `mailsnail and it will be routed through the proxy automatically.`
   );
+}
+
+/** "…" or "… through the proxy at host:port" — never with credentials. */
+function throughProxy(route) {
+  return route?.dispatcher ? ` through the proxy at ${targetOf(route.proxy.raw)}` : "";
 }
 
 /** "api.mailsnail.dev:443" -> "TCP 443 / HTTPS CONNECT"; other ports say only what's true. */
@@ -177,11 +194,12 @@ const TLS_CODES = [
  * looks identical to "the gateway processed it and the answer got lost", so
  * those stay false — a duplicate letter is worse than an error.
  */
-export function describeTransportError({ url, error, env = {} }) {
+export function describeTransportError({ url, error, env = {}, route }) {
   const target = targetOf(url);
   const codes = causeCodes(error);
   const has = (...names) => names.some((n) => codes.includes(n));
   const proxy = detectProxy(env, url);
+  const hop = throughProxy(route);
   const detail = codes.find((c) => c !== "Error" && c !== "TypeError") ?? error?.message;
 
   const tunnelRefusal = causeChain(error, (e) => [e.message]).find((m) =>
@@ -210,21 +228,22 @@ export function describeTransportError({ url, error, env = {} }) {
     what = `DNS lookup for ${new URL(url).hostname} failed (${detail}). Nothing was sent — the request never left this machine.`;
   } else if (has("ECONNREFUSED")) {
     safeToRetry = true;
-    what = `Connection to ${target} was refused (ECONNREFUSED). Nothing was sent.`;
+    what = `Connection to ${target}${hop} was refused (ECONNREFUSED). Nothing was sent.`;
   } else if (has("UND_ERR_CONNECT_TIMEOUT", "ConnectTimeoutError")) {
     safeToRetry = true; // the connection was never established
-    what = `Connection to ${target} timed out before it was established (${detail}). Nothing was sent.`;
+    what = `Connection to ${target}${hop} timed out before it was established (${detail}). Nothing was sent.`;
   } else if (has("ETIMEDOUT", "TimeoutError", "UND_ERR_HEADERS_TIMEOUT")) {
-    what = `Request to ${target} timed out (${detail}). It may or may not have been received — this one is ambiguous, so nothing is retried automatically.`;
+    what = `Request to ${target}${hop} timed out (${detail}). It may or may not have been received — this one is ambiguous, so nothing is retried automatically.`;
   } else if (has("ECONNRESET", "EPROTO", "UND_ERR_SOCKET")) {
-    what = `Connection to ${target} was reset (${detail}) — a filtering middlebox often does this. Whether the request was received first is unknowable, so nothing is retried automatically.`;
+    what = `Connection to ${target}${hop} was reset (${detail}) — a filtering middlebox often does this. Whether the request was received first is unknowable, so nothing is retried automatically.`;
   } else if (has("ABORT_ERR", "AbortError")) {
-    what = `Request to ${target} was aborted before a response arrived.`;
+    what = `Request to ${target}${hop} was aborted before a response arrived.`;
   } else {
-    what = `Couldn't reach ${target}: ${error?.message ?? detail}.`;
+    what = `Couldn't reach ${target}${hop}: ${error?.message ?? detail}.`;
   }
 
-  const hint = proxyHint(proxy) ?? (code === ERROR_CODES.TLS_UNTRUSTED ? null : allowlistHint(target));
+  const hint =
+    proxyHint(proxy, route) ?? (code === ERROR_CODES.TLS_UNTRUSTED ? null : allowlistHint(target));
   return {
     code,
     message: hint ? `${what} ${hint}` : what,
@@ -240,7 +259,7 @@ export function describeTransportError({ url, error, env = {} }) {
  * Returns null when the response is the gateway's own (JSON) answer — the caller
  * should surface the gateway's message unchanged in that case.
  */
-export function classifyBlockedResponse({ status, headers, body, url, env = {} }) {
+export function classifyBlockedResponse({ status, headers, body, url, env = {}, route }) {
   const target = targetOf(url);
   const header = (name) => {
     try {
@@ -275,7 +294,7 @@ export function classifyBlockedResponse({ status, headers, body, url, env = {} }
     return blocked(
       `An HTTP proxy between this process and ${target} demanded authentication (407${auth ? `, ${auth}` : ""}). ` +
         `The request never reached the Mailsnail gateway, so nothing was sent or charged.`,
-      proxyHint(proxy) ??
+      proxyHint(proxy, route) ??
         `Supply proxy credentials via HTTPS_PROXY (e.g. http://user:pass@proxy:8080) and set NODE_USE_ENV_PROXY=1, or allowlist ${target} so the proxy is bypassed.`,
       { safeToRetry: true },
     );
@@ -298,12 +317,12 @@ export function classifyBlockedResponse({ status, headers, body, url, env = {} }
       // from a filter in front of a backend that already saw the request. The
       // matching safeToRetry stays false for the same reason.
       `${target} answered 403 with no JSON body${viaNote}. The Mailsnail gateway always answers with JSON, so this 403 came from a hop in between — typically an egress proxy, firewall, or allowlist — and not from the Mailsnail application, which means it is almost certainly network policy rather than your account.`,
-      proxyHint(proxy) ?? allowlistHint(target),
+      proxyHint(proxy, route) ?? allowlistHint(target),
     );
   }
 
   if (status === 502 || status === 503 || status === 504) {
-    const hint = proxyHint(proxy) ?? allowlistHint(target);
+    const hint = proxyHint(proxy, route) ?? allowlistHint(target);
     return {
       code: ERROR_CODES.GATEWAY_UNAVAILABLE,
       message:

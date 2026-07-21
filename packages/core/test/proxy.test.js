@@ -127,6 +127,30 @@ test("a refused CONNECT tunnel is reported as an egress block", { skip }, async 
   }
 });
 
+// When we ARE routing through the proxy, "install undici" is the wrong advice —
+// the proxy itself is the thing to look at. Uses a dead local port; no network.
+test("a broken proxy we're routing through blames the proxy", { skip }, async () => {
+  resetProxyDispatchers();
+  try {
+    const p = new GatewayProvider({
+      baseUrl: "https://api.mailsnail.dev",
+      env: { HTTPS_PROXY: "http://127.0.0.1:1" },
+    });
+    const err = await p.preview({ body_text: "hi" }).then(
+      () => null,
+      (e) => e,
+    );
+    assert.match(err.message, /through the proxy at 127\.0\.0\.1:1/);
+    assert.match(err.hint, /check that the proxy itself is reachable/);
+    assert.ok(
+      !/install `undici`/.test(err.message),
+      "must not tell you to install what is already doing the routing",
+    );
+  } finally {
+    resetProxyDispatchers();
+  }
+});
+
 test("no proxy configured means no behavior change", async () => {
   resetProxyDispatchers();
   const origin = await startOrigin();

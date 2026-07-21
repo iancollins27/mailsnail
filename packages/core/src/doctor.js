@@ -50,14 +50,14 @@ async function probe(endpoint, { env, timeoutMs, fetchImpl }) {
     headers: { Accept: "application/json" },
     signal: AbortSignal.timeout(timeoutMs),
   };
-  const proxy = await resolveProxyDispatcher(env, url);
-  if (proxy.dispatcher) init.dispatcher = proxy.dispatcher;
+  const route = await resolveProxyDispatcher(env, url);
+  if (route.dispatcher) init.dispatcher = route.dispatcher;
 
   let res;
   try {
     res = await fetchImpl(url, init);
   } catch (err) {
-    const d = describeTransportError({ url, error: err, env });
+    const d = describeTransportError({ url, error: err, env, route });
     return { ok: false, target, code: d.code, detail: d.message, hint: d.hint };
   }
 
@@ -75,6 +75,7 @@ async function probe(endpoint, { env, timeoutMs, fetchImpl }) {
     body,
     url,
     env,
+    route,
   });
   if (blocked) {
     return {
