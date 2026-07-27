@@ -236,6 +236,14 @@ export class GatewayProvider {
       id: r.body.id,
       status: r.body.status,
       url: r.body.receipt_url,
+      // The capability needed to read this piece's status later. Surfaced at the top
+      // level, not just inside `raw`, because on the managed service it is the ONLY
+      // way to look the piece up — `id` is the printer's job number and no longer
+      // resolves. It is also unrecoverable if dropped, so burying it in `raw` would
+      // mean an agent that doesn't spelunk loses status access permanently.
+      // Absent when talking to a self-hosted gateway, which still looks up by `id`.
+      receipt_token: r.body.receipt_token,
+      status_url: r.body.status_url,
       mode: "LIVE",
       raw: r.body,
     };
@@ -252,6 +260,10 @@ export class GatewayProvider {
       id: r.body.id,
       status: r.body.status,
       url: r.body.receipt_url,
+      // See sendLetter. A postcard receipt is namespaced to postcards and will not
+      // resolve via getLetter on the managed service — use getPostcard.
+      receipt_token: r.body.receipt_token,
+      status_url: r.body.status_url,
       mode: "LIVE",
       raw: r.body,
     };
@@ -300,10 +312,53 @@ export class GatewayProvider {
     }
   }
 
-  async getLetter(id) {
-    const r = await this._request("GET", `/v1/letters/${encodeURIComponent(id)}`);
+  /**
+   * Look up one letter.
+   *
+   * The argument is passed through verbatim, which is what keeps ONE method working
+   * against three different backends:
+   *   - managed (api.mailsnail.dev): the `receipt_token` from sendLetter. Raw job ids
+   *     stopped resolving there — they are sequential integers, so accepting one on an
+   *     unauthenticated route let anyone enumerate other customers' mail.
+   *   - self-hosted @mailsnail/gateway: still looks up by raw job id. Unchanged.
+   *   - BYO Click2Mail/Lob: the provider's own id, via those providers, not this one.
+   *
+   * Prefer `body.message` in the error: the managed service's 404 explains what to use
+   * instead, and collapsing it to the bare `error` code throws that away right when
+   * the caller most needs it.
+   */
+  async getLetter(idOrReceiptToken) {
+    const r = await this._request(
+      "GET",
+      `/v1/letters/${encodeURIComponent(idOrReceiptToken)}`,
+    );
     if (r.status >= 400) {
-      throw this._readError(r, r.body?.error ?? `gateway ${r.status}`);
+      throw this._readError(
+        r,
+        r.body?.message ?? r.body?.error ?? `gateway ${r.status}`,
+      );
+    }
+    return r.body;
+  }
+
+  /**
+   * Look up one postcard. Same contract as getLetter.
+   *
+   * Separate from getLetter because the managed service namespaces receipts per piece
+   * kind, so a postcard token deliberately does not resolve on the letters route.
+   * Providers that serve both kinds from one endpoint (Click2Mail direct) don't need
+   * this and don't implement it — callers should fall back to getLetter there.
+   */
+  async getPostcard(idOrReceiptToken) {
+    const r = await this._request(
+      "GET",
+      `/v1/postcards/${encodeURIComponent(idOrReceiptToken)}`,
+    );
+    if (r.status >= 400) {
+      throw this._readError(
+        r,
+        r.body?.message ?? r.body?.error ?? `gateway ${r.status}`,
+      );
     }
     return r.body;
   }

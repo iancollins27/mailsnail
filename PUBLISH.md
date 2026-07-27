@@ -1,5 +1,15 @@
 # Publishing a release
 
+> **The pending 0.7.0 release is now security-relevant — sequence it with the API.**
+> `mailsnail` 0.7.0 / `@mailsnail/core` 0.2.0 were staged but never published (npm
+> still serves 0.6.0 / 0.1.0), so this release also carries the client half of the
+> status-lookup fix: `send_letter` surfaces `receipt_token`, and `get_letter` accepts
+> it. The managed API stops accepting raw job ids for status lookup, which means
+> **published 0.6.0's `get_letter` will 404 against the managed service from the moment
+> that API change deploys.** Publish this release at or before that deploy. Self-hosted
+> gateways and BYO Click2Mail/Lob are unaffected — they still look up by job id, and
+> the client still passes it through.
+
 npm 2FA on this account is enforced at publish time and **granular-token 2FA
 bypass does not work** (the "Bypass 2FA" checkbox silently doesn't stick, and the
 resulting token 403s with *"granular access token with bypass 2fa enabled is

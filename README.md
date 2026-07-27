@@ -21,7 +21,7 @@ claude mcp add mailsnail -- npx -y mailsnail
 
 | Package | What it is |
 |---|---|
-| [`mailsnail`](packages/mailsnail) | MCP server — 10 tools (`doctor`, `verify_address`, `preview_letter`, `send_letter`, `send_postcard`, `get_balance`, `top_up`, `get_letter`, `list_letters`, `cancel_letter`) over any provider below. Works in Claude Code, Claude Desktop, Cursor, Codex CLI, OpenAI Agents SDK. |
+| [`mailsnail`](packages/mailsnail) | MCP server — 11 tools (`doctor`, `verify_address`, `preview_letter`, `send_letter`, `send_postcard`, `get_balance`, `top_up`, `get_letter`, `get_postcard`, `list_letters`, `cancel_letter`) over any provider below. Works in Claude Code, Claude Desktop, Cursor, Codex CLI, OpenAI Agents SDK. |
 | [`@mailsnail/core`](packages/core) | Provider-agnostic core: adapters (Click2Mail, Lob, any Mailsnail gateway), multi-provider failover router, request validation. Zero dependencies. |
 | [`@mailsnail/gateway`](packages/gateway) | Self-hostable REST API: BYO provider credentials, `body_text`→PDF rendering, proofs, invocation logging. The managed service at `api.mailsnail.dev` runs the same wire protocol. |
 | [`spec/`](spec) | The provider-neutral mail-piece schema + the failover-safety contract. Implement it and anything — including a print shop — becomes a Mailsnail-compatible node. |

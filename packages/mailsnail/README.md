@@ -132,7 +132,8 @@ For Lob, `MAIL_MCP_ALLOW_LIVE=1` is also required to start with a `live_` key. F
 | `send_postcard` | Send a 4×6 / 6×9 / 6×11 postcard from a PDF URL. |
 | `get_balance` | Prepaid balance on a managed account (needs `MAILSNAIL_API_KEY`). |
 | `top_up` | Add funds to that balance — cheaper than per-piece once you send regularly. |
-| `get_letter` | Fetch status of a previously sent letter/job. |
+| `get_letter` | Fetch status of a previously sent letter. On the managed service pass the `receipt_token` from `send_letter` (its job ids are not lookup keys); self-hosted/BYO pass the provider `id`. |
+| `get_postcard` | Same, for postcards. The managed service issues postcard receipts in their own namespace, so a postcard token does not resolve via `get_letter`. |
 | `list_letters` | List recent letters (Lob only). |
 | `cancel_letter` | Cancel before production. Cancellation windows are short and provider-specific. |
 
