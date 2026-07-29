@@ -72,8 +72,10 @@ async function smokeOne(envOverrides, expectProviderInLog) {
     send("notifications/initialized", {});
     const toolsResp = await send("tools/list", {}, 2);
     const tools = toolsResp.result?.tools ?? [];
-    if (tools.length !== 10) {
-      throw new Error(`expected 10 tools, got ${tools.length}`);
+    // 11 since get_postcard was added: the managed service namespaces status receipts
+    // per piece kind, so a postcard receipt does not resolve via get_letter.
+    if (tools.length !== 11) {
+      throw new Error(`expected 11 tools, got ${tools.length}`);
     }
     if (!stderrBuf.includes(expectProviderInLog)) {
       throw new Error(

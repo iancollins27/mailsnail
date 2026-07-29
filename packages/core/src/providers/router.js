@@ -89,6 +89,13 @@ export class FailoverProvider {
   getLetter(id) {
     return this._run("getLetter", [id], "read");
   }
+  // Only the managed/self-host gateway implements this — it is the one backend that
+  // namespaces status receipts per piece kind. Providers that serve letters and
+  // postcards from a single endpoint simply don't define it, and _run already turns
+  // that into NotSupported and moves to the next provider.
+  getPostcard(id) {
+    return this._run("getPostcard", [id], "read");
+  }
   listLetters(params) {
     return this._run("listLetters", [params], "read");
   }

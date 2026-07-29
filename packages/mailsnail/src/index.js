@@ -310,13 +310,69 @@ server.tool(
   },
 );
 
+// Status lookup takes whichever handle the configured backend issues, so one tool
+// covers all three: the managed service returns a `receipt_token` from send_letter
+// (its job ids are sequential and no longer resolve — accepting them on an
+// unauthenticated route let anyone read other customers' mail), while a self-hosted
+// gateway and BYO Click2Mail/Lob still look up by provider job id. Both parameter
+// names are accepted so an agent that read either set of docs succeeds.
+const STATUS_LOOKUP_ARGS = {
+  receipt_token: z
+    .string()
+    .optional()
+    .describe(
+      "Managed service: the `receipt_token` returned by send_letter/send_postcard. " +
+        "This is the only way to read status there — keep it, it cannot be recovered.",
+    ),
+  id: z
+    .string()
+    .optional()
+    .describe(
+      "Self-hosted gateway or BYO provider: the provider's letter/job id. Ignored " +
+        "when receipt_token is supplied. Does NOT work against the managed service.",
+    ),
+};
+
+function statusHandle({ receipt_token, id }) {
+  const handle = receipt_token ?? id;
+  if (!handle) {
+    throw new ProviderError(
+      "Pass receipt_token (managed service — returned by send_letter) or id " +
+        "(self-hosted gateway / BYO provider).",
+      { provider: provider.name, status: 400 },
+    );
+  }
+  return handle;
+}
+
 server.tool(
   "get_letter",
-  "Fetch the status of a previously sent letter by id.",
-  { id: z.string().describe("Provider letter/job id.") },
-  async ({ id }) => {
+  "Fetch the status of a previously sent letter. FREE — never charges.",
+  STATUS_LOOKUP_ARGS,
+  async (input) => {
     try {
-      return ok(await provider.getLetter(id));
+      return ok(await provider.getLetter(statusHandle(input)));
+    } catch (err) {
+      return fail(err);
+    }
+  },
+);
+
+server.tool(
+  "get_postcard",
+  "Fetch the status of a previously sent postcard. FREE — never charges.",
+  STATUS_LOOKUP_ARGS,
+  async (input) => {
+    try {
+      const handle = statusHandle(input);
+      // The managed/self-host gateway namespaces postcard receipts separately, so it
+      // needs the postcard route. Providers that serve both kinds from one endpoint
+      // (Click2Mail direct) don't define getPostcard — fall back rather than fail.
+      return ok(
+        typeof provider.getPostcard === "function"
+          ? await provider.getPostcard(handle)
+          : await provider.getLetter(handle),
+      );
     } catch (err) {
       return fail(err);
     }
