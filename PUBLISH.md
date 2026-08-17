@@ -35,6 +35,26 @@ typed OTP and dies instantly. `winpty` does not rescue it: the agent shell has n
 console attached, so winpty aborts with *"stdin is not a tty"*. Tried on
 2026-08-11. Don't re-test this — the publishes are yours to run.
 
+**A 404 on a scoped publish means your token expired — not that the package is
+missing.** Symptom (2026-08-17): `npm publish` for `@mailsnail/core` and
+`@mailsnail/gateway` both died with
+
+```
+npm error code E404
+npm error 404  The requested resource '@mailsnail/core@0.2.0' could not be found
+npm error 404  or you do not have permission to access it.
+```
+
+Nothing was wrong with the packages. `C:\Users\ian\.npmrc` still held an
+`_authToken`, but it had gone stale, and for a *scoped* package npm answers a bad
+token with 404 rather than 401 so it never reveals whether a private package
+exists. It is the "do not have permission" half of that message, never the "could
+not be found" half. `npm owner ls @mailsnail/core` confirmed `iancollins27` still
+owns it. The one-line diagnosis is **`npm whoami`** — a clean `E401 Unauthorized`
+there tells you immediately it is auth, not naming. Fix: `npm login` again, verify
+`npm whoami` prints `iancollins27`, then publish. Always run `npm whoami` before a
+publishing session; the token does not last between releases.
+
 So: run this yourself, in PowerShell.
 
 ```powershell
