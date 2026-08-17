@@ -105,10 +105,31 @@ C:\Users\ian\mcp-publisher.exe publish
 Ownership is proven by the `mcpName` field in `packages/mailsnail/package.json`
 matching the server name — keep them in sync.
 
+### The registry record is not tied to an npm release
+
+`server.json` describes two ways to reach the same server, and they version
+independently:
+
+- `remotes[]` — the hosted server at `https://api.mailsnail.dev/mcp`. This is the
+  path most people take: add the URL, sign in through the client, done. It ships
+  when Railway ships. **No npm release is involved.**
+- `packages[]` — the npm package, for self-hosters running against their own
+  Click2Mail or Lob account.
+
+So `packages[].version` must name a version that **actually exists on npm**, or
+the publish is rejected — the registry resolves it to check the `mcpName`
+ownership marker. Keep it pinned to `npm view mailsnail version`, not to whatever
+is staged locally. The top-level `version` is the registry record's own number and
+can move on its own; bump it whenever you republish (adding the hosted endpoint
+took `0.6.0` → `0.6.1` with npm still at `0.6.0`).
+
+When an npm release does go out, set both to the new number in the same commit.
+
 ## Checklist
 
 - [ ] `npm test` green at the repo root
 - [ ] Versions bumped in `packages/*/package.json` **and** `server.json`
+- [ ] `server.json` `packages[].version` matches `npm view mailsnail version`
 - [ ] Inter-package dependency ranges point at the new core version
 - [ ] Publish core → gateway → mailsnail
 - [ ] `npx -y mailsnail@latest doctor` behaves as expected
