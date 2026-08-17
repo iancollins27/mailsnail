@@ -26,6 +26,15 @@ polls, rather than falling back to a username prompt. But that URL carries a liv
 session token, so an agent harness redacts it on the way to disk; the link an
 agent can hand you is `.../login/cli/***`, which 404s. Tried on 2026-07-21.
 
+**Logging in yourself does not then let an agent publish.** A fresh `npm login`
+leaves a valid token an agent shell happily reads — `npm whoami` returns
+`iancollins27` from the agent side — but `npm publish` still fails `EOTP`
+("requires a one-time password from your authenticator"). The WebAuthn ceremony
+needs a TTY to launch the browser; with none, npm falls back to prompting for a
+typed OTP and dies instantly. `winpty` does not rescue it: the agent shell has no
+console attached, so winpty aborts with *"stdin is not a tty"*. Tried on
+2026-08-11. Don't re-test this — the publishes are yours to run.
+
 So: run this yourself, in PowerShell.
 
 ```powershell
