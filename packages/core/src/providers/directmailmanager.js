@@ -30,7 +30,8 @@ const DMM_SANDBOX_URL = "https://sandbox.directmailmanager.com/api";
 function isCertified(extra_service) {
   return (
     extra_service === "certified" ||
-    extra_service === "certified_return_receipt"
+    extra_service === "certified_return_receipt" ||
+    extra_service === "certified_return_receipt_electronic"
   );
 }
 

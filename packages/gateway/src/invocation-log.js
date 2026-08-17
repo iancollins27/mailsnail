@@ -13,7 +13,8 @@ function pieceKind(req) {
   if (req.path.startsWith("/v1/postcards")) return "postcard";
   if (req.path.startsWith("/v1/letters") || req.path.startsWith("/v1/preview")) {
     return req.body?.extra_service === "certified" ||
-      req.body?.extra_service === "certified_return_receipt"
+      req.body?.extra_service === "certified_return_receipt" ||
+      req.body?.extra_service === "certified_return_receipt_electronic"
       ? "certified_letter"
       : "letter";
   }

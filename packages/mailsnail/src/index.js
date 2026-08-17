@@ -70,15 +70,34 @@ try {
 }
 
 let spentCents = 0;
+// What a piece actually costs the CALLER, so the session cap counts real money.
+// These were previously per-piece supplier costs (letter 100, certified 700) and
+// carried no entry for either return-receipt kind, so a $17.00 green-card send
+// was scored against the cap at the 200¢ fallback — a cap set to $25 could be
+// overshot roughly threefold. Retail prices, kept in step with mail-api's
+// pricing table; the fallback is now the dearest piece, so an unknown kind
+// over-counts (stops early) instead of under-counting.
 const ESTIMATED_COST_CENTS = {
-  letter: 100,
-  certified_letter: 700,
-  postcard: 65,
+  letter: 150,
+  certified_letter: 975,
+  certified_return_receipt: 1700,
+  certified_return_receipt_electronic: 1500,
+  postcard: 100,
 };
+const MAX_PIECE_COST_CENTS = Math.max(...Object.values(ESTIMATED_COST_CENTS));
+
+// Mirrors mail-api's classifyLetter so the cap prices what will actually be billed.
+function letterKind(extra_service) {
+  if (extra_service === "certified_return_receipt") return "certified_return_receipt";
+  if (extra_service === "certified_return_receipt_electronic")
+    return "certified_return_receipt_electronic";
+  if (extra_service === "certified") return "certified_letter";
+  return "letter";
+}
 
 function checkSpend(kind) {
   if (!provider.isLive) return;
-  const next = spentCents + (ESTIMATED_COST_CENTS[kind] ?? 200);
+  const next = spentCents + (ESTIMATED_COST_CENTS[kind] ?? MAX_PIECE_COST_CENTS);
   if (next > Math.round(SPEND_CAP_USD * 100)) {
     throw new Error(
       `Per-session spend cap of $${SPEND_CAP_USD} would be exceeded. Raise MAIL_MCP_SPEND_CAP_USD or restart the server.`,
@@ -86,6 +105,21 @@ function checkSpend(kind) {
   }
   spentCents = next;
 }
+
+// Spelled out because picking the wrong one is expensive and hard to undo — a
+// legal notice mailed without proof of delivery can't be retroactively proven.
+// `registered` used to be offered here but was never implemented server-side:
+// it was accepted, billed as a plain letter, and mailed untracked. The API now
+// rejects it outright rather than silently mis-selling.
+const EXTRA_SERVICE_DESC =
+  "USPS add-on service. Omit for a plain first-class letter. " +
+  "`certified` = proof of MAILING (tracking + USPS acceptance record). " +
+  "`certified_return_receipt` = certified plus the physical green card (PS Form 3811) " +
+  "signed by the recipient and mailed back to you — proof of DELIVERY, what formal " +
+  "legal notices classically require. " +
+  "`certified_return_receipt_electronic` = the same proof of delivery as a PDF of the " +
+  "signature instead of the physical card, and cheaper. " +
+  "Each step up costs more; call preview_letter to see the exact price before sending.";
 
 const AddressSchema = z.object({
   name: z.string().min(1).describe("Full name of recipient or sender"),
@@ -178,9 +212,13 @@ server.tool(
     color: z.boolean().default(false),
     double_sided: z.boolean().default(true),
     extra_service: z
-      .enum(["certified", "registered", "certified_return_receipt"])
+      .enum([
+        "certified",
+        "certified_return_receipt",
+        "certified_return_receipt_electronic",
+      ])
       .optional()
-      .describe("Adds tracking. `certified` for legal/compliance mail."),
+      .describe(EXTRA_SERVICE_DESC),
     description: z.string().optional(),
   },
   async (input) => {
@@ -218,11 +256,13 @@ server.tool(
     color: z.boolean().default(false),
     double_sided: z.boolean().default(true),
     extra_service: z
-      .enum(["certified", "registered", "certified_return_receipt"])
+      .enum([
+        "certified",
+        "certified_return_receipt",
+        "certified_return_receipt_electronic",
+      ])
       .optional()
-      .describe(
-        "Adds tracking. `certified` is the most common; useful for legal/compliance mail.",
-      ),
+      .describe(EXTRA_SERVICE_DESC),
     description: z.string().optional(),
     payment_token: z
       .string()
@@ -233,7 +273,7 @@ server.tool(
   },
   async (input) => {
     try {
-      checkSpend(input.extra_service ? "certified_letter" : "letter");
+      checkSpend(letterKind(input.extra_service));
       return ok(await provider.sendLetter(input));
     } catch (err) {
       return fail(err);

@@ -33,10 +33,14 @@ function pickXmlTag(xml, tag) {
   return m ? m[1].trim() : null;
 }
 
+// Every certified variant mails as USPS Certified Mail; the return receipt is an
+// add-on on top of it. Missing one here does not error — it silently mails an
+// ordinary untracked letter, so keep this in step with the server's EXTRA_SERVICES.
 function isCertifiedService(extra_service) {
   return (
     extra_service === "certified" ||
-    extra_service === "certified_return_receipt"
+    extra_service === "certified_return_receipt" ||
+    extra_service === "certified_return_receipt_electronic"
   );
 }
 

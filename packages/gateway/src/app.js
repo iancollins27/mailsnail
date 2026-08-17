@@ -26,7 +26,8 @@ const PROOF_TTL_MS = 30 * 60 * 1000; // 30 min
 
 function classifyLetter(body) {
   return body.extra_service === "certified" ||
-    body.extra_service === "certified_return_receipt"
+    body.extra_service === "certified_return_receipt" ||
+    body.extra_service === "certified_return_receipt_electronic"
     ? "certified_letter"
     : "letter";
 }
