@@ -13,9 +13,9 @@ Set `extra_service` on `preview_letter`, so the proof and price already include 
 
 | `extra_service` | What the sender gets | Price |
 |---|---|---|
-| `certified` | USPS tracking and proof of mailing | $9.75 |
-| `certified_return_receipt_electronic` | Also a PDF of the recipient's delivery signature | $15.00 |
-| `certified_return_receipt` | Also the physical green card (PS Form 3811), signed on delivery and mailed back to the sender's address | $17.00 |
+| `certified` | USPS tracking and proof of mailing | $8.61 |
+| `certified_return_receipt_electronic` | Also a PDF of the recipient's delivery signature | $11.64 |
+| `certified_return_receipt` | Also the physical green card (PS Form 3811), signed on delivery and mailed back to the sender's address | $14.27 |
 
 Prices are for one page; the preview shows the exact price.
 

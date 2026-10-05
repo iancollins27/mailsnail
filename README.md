@@ -8,13 +8,13 @@
 
 Agents have every channel except one. They can email, text, call, and post to every feed — but until now, putting a real, postmarked envelope in a mailbox meant a human signing up for a print-provider account, provisioning API keys, and wiring billing. Mailsnail closes that gap:
 
-- **No signup in managed mode.** Agents pay per piece via Stripe Shared Payment Tokens over the [Machine Payments Protocol](https://docs.stripe.com/payments/machine/mpp) (HTTP 402). First letter can go out minutes after install. $1.50 first-class, $9.75 certified, $1.00 postcard — flat, no subscription.
+- **No signup in managed mode.** Agents pay per piece via Stripe Shared Payment Tokens over the [Machine Payments Protocol](https://docs.stripe.com/payments/machine/mpp) (HTTP 402). First letter can go out minutes after install. Priced at our cost: from $1.21 first-class and $8.61 certified, no subscription.
 - **No lock-in, ever.** The provider layer is open and swappable: bring your own Click2Mail or Lob account, self-host the whole gateway, or chain providers for failover. The managed service is a convenience, not a cage.
 - **Built for compliance mail.** Certified letters with `extra_service: "certified"` — the mail that legally *must* be physical (preliminary lien notices, legal notices) and must not miss its deadline because one print API had a bad day.
 
 ```bash
 claude mcp add mailsnail -- npx -y mailsnail
-# then: "Send me a postcard that says hello."
+# then: "Mail a thank-you letter to my aunt."
 ```
 
 ## Hosted connector and plugins

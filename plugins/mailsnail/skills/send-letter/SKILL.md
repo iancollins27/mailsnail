@@ -58,7 +58,7 @@ When mailing several letters, preview each one. Then get approval for the whole 
 
 Call `send_letter` with only the approved `draft_id`. It mails exactly that proof at the quoted price. Don't send `to`, `from` or `body_text` again.
 
-- **The result has `setup_url`:** the user has no payment method yet. Give them the link. It's a Stripe-hosted page where they add a card and fund a prepaid balance; MailSnail never sees the card number. After they finish, call `send_letter` again with the same `draft_id`.
+- **The result has `setup_url`:** the balance doesn't cover the letter. Give the user the link. It's a Stripe-hosted page where they fund a prepaid balance; MailSnail never sees the card number. After they finish, call `send_letter` again with the same `draft_id`.
 - **The result says the draft expired or is unknown:** preview again and get approval again.
 - **You can't tell whether a send went through,** for example after a timeout: call `send_letter` again with the same `draft_id`. A `draft_id` is only ever mailed once, so a retry returns the original result instead of mailing a second letter.
 - **The result is `send_in_progress_or_unconfirmed`:** don't preview a new copy and don't send again. A new draft could mail the letter twice. Tell the user the send needs to be confirmed, and give them hello@mailsnail.dev.
@@ -70,20 +70,23 @@ Tell the user that the letter was sent and what it cost. Give them its `receipt_
 ## Balance and payment
 
 - `get_balance` shows the balance, whether a card is saved, and the auto-reload settings.
-- `add_payment_method` returns a Stripe link to add or change a card.
+- `add_payment_method` returns a Stripe link to add funds. By default it's a one-time payment, and the card isn't saved.
+  - Pass `auto_reload: true` only if the user asks for automatic reloads. The Stripe page then also saves the card and shows the reload terms the user agrees to.
+  - When a card is already saved, the result also includes a link for updating the card and viewing receipts.
+- `turn_off_auto_reload` stops automatic charges. Use it whenever the user asks.
 
-Neither charges anything. There is no tool that charges a card on demand. Money is added only on Stripe's own pages, or by the auto-reload the user set up there.
+None of these charges anything. There is no tool that charges a card on demand. Money is added only on Stripe's own pages, or by the auto-reload the user agreed to there.
 
 ## Prices
 
-The preview always shows the exact price; these are the one-page prices:
+MailSnail prices mail at its own cost. The preview always shows the exact price, which is what the user pays. Extra pages and color cost a little more. These are the one-page prices:
 
 | Service | Price |
 |---|---|
-| First-class letter | $1.50 |
-| Certified Mail | $9.75 |
-| Certified Mail with an electronic return receipt | $15.00 |
-| Certified Mail with the physical green-card return receipt | $17.00 |
+| First-class letter | $1.21 |
+| Certified Mail | $8.61 |
+| Certified Mail with an electronic return receipt | $11.64 |
+| Certified Mail with the physical green-card return receipt | $14.27 |
 
 ## Don't
 

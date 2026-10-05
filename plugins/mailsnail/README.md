@@ -19,14 +19,16 @@ This plugin bundles two things:
    - "Send my landlord a certified letter giving 30 days' notice, with a return receipt."
    - "Has the letter I sent on Tuesday been delivered?"
 
-The first time you send, Claude gives you a Stripe link to add a card and fund a prepaid balance. After that, each piece is paid from the balance. There's no subscription.
+The first time you send, Claude gives you a Stripe link to fund a prepaid balance with a one-time payment. Each piece is then paid from the balance. There's no subscription, and your card isn't saved unless you choose automatic reloads. You can turn reloads off any time by asking Claude.
+
+MailSnail prices mail at its own cost. The preview shows the exact price before anything is charged. Extra pages and color cost a little more.
 
 | Service | Price (one page) |
 |---|---|
-| First-class letter | $1.50 |
-| Certified Mail | $9.75 |
-| Certified Mail with an electronic return receipt | $15.00 |
-| Certified Mail with the physical green-card return receipt | $17.00 |
+| First-class letter | $1.21 |
+| Certified Mail | $8.61 |
+| Certified Mail with an electronic return receipt | $11.64 |
+| Certified Mail with the physical green-card return receipt | $14.27 |
 
 US addresses only.
 

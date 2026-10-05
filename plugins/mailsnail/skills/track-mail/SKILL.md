@@ -27,4 +27,6 @@ Give the status in plain words: for example, received by the printer, printed, o
 
 For "how much do I have left?", call `get_balance`. It's free, and it shows the balance, whether a card is saved, and the auto-reload settings.
 
-If the user wants to add or change a card, call `add_payment_method` and give them the Stripe link it returns.
+To add funds, call `add_payment_method` and give the user the Stripe link it returns. By default it's a one-time payment.
+
+To stop automatic reloads, call `turn_off_auto_reload`.
