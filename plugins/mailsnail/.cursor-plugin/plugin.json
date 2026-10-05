@@ -1,0 +1,15 @@
+{
+  "name": "mailsnail",
+  "displayName": "MailSnail",
+  "version": "1.0.0",
+  "description": "Send real USPS letters and certified mail from Cursor. The agent writes the letter, checks the address, and shows you the PDF proof and exact price; nothing is mailed until you approve.",
+  "author": {
+    "name": "MailSnail",
+    "email": "hello@mailsnail.dev"
+  },
+  "homepage": "https://mailsnail.dev",
+  "repository": "https://github.com/iancollins27/mailsnail",
+  "license": "MIT",
+  "keywords": ["mail", "letter", "usps", "certified-mail", "postal", "mcp"],
+  "logo": "assets/logo.png"
+}

@@ -8,13 +8,24 @@
 
 Agents have every channel except one. They can email, text, call, and post to every feed — but until now, putting a real, postmarked envelope in a mailbox meant a human signing up for a print-provider account, provisioning API keys, and wiring billing. Mailsnail closes that gap:
 
-- **No signup in managed mode.** Agents pay per piece via Stripe Shared Payment Tokens over the [Machine Payments Protocol](https://docs.stripe.com/payments/machine/mpp) (HTTP 402). First letter can go out minutes after install. $1.50 first-class, $9.00 certified, $1.00 postcard — flat, no subscription.
+- **No signup in managed mode.** Agents pay per piece via Stripe Shared Payment Tokens over the [Machine Payments Protocol](https://docs.stripe.com/payments/machine/mpp) (HTTP 402). First letter can go out minutes after install. $1.50 first-class, $9.75 certified, $1.00 postcard — flat, no subscription.
 - **No lock-in, ever.** The provider layer is open and swappable: bring your own Click2Mail or Lob account, self-host the whole gateway, or chain providers for failover. The managed service is a convenience, not a cage.
 - **Built for compliance mail.** Certified letters with `extra_service: "certified"` — the mail that legally *must* be physical (preliminary lien notices, legal notices) and must not miss its deadline because one print API had a bad day.
 
 ```bash
 claude mcp add mailsnail -- npx -y mailsnail
 # then: "Send me a postcard that says hello."
+```
+
+## Hosted connector and plugins
+
+The quickest start needs no install. Add `https://api.mailsnail.dev/mcp` as a custom connector in Claude, ChatGPT, Cursor or any MCP client that supports remote servers, then sign in. Each app's setup steps are at [mailsnail.dev/setup](https://mailsnail.dev/setup).
+
+[`plugins/mailsnail`](plugins/mailsnail) packages that connector with skills for sending letters, sending certified mail and tracking mail. It works in Claude (chat, Cowork and Claude Code) and in Cursor. To install it in Claude Code:
+
+```text
+/plugin marketplace add iancollins27/mailsnail
+/plugin install mailsnail@mailsnail
 ```
 
 ## Packages

@@ -1,0 +1,17 @@
+{
+  "name": "mailsnail",
+  "owner": {
+    "name": "MailSnail",
+    "email": "hello@mailsnail.dev"
+  },
+  "metadata": {
+    "description": "MailSnail plugins: send real USPS letters and certified mail from Claude."
+  },
+  "plugins": [
+    {
+      "name": "mailsnail",
+      "source": "./plugins/mailsnail",
+      "description": "Send real USPS letters and certified mail. Preview the PDF proof and exact price before anything is mailed."
+    }
+  ]
+}

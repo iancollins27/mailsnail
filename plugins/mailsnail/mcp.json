@@ -1,0 +1,7 @@
+{
+  "mcpServers": {
+    "mailsnail": {
+      "url": "https://api.mailsnail.dev/mcp"
+    }
+  }
+}
