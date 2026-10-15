@@ -20,8 +20,14 @@ If the user doesn't have the `receipt_token`, look for it earlier in this conver
 
 Give the status in plain words: for example, received by the printer, printed, or handed to USPS.
 
+- Once the letter is with USPS, `tracking` shows its latest scan (`status`, `status_time`, `status_location`). Before that, `tracking.available` is false; that's normal for the first 1-2 business days. Tracking updates once a day.
+- For a certified letter, give the user `tracking.tracking_number` (the USPS Certified Mail number) and `tracking.usps_tracking_url`, where they can see every scan.
+- With an electronic return receipt, `return_receipt.url` is the recipient's signature PDF. It works only after delivery, sometimes a few days later. With a green-card receipt, the signed card is mailed back to the sender's address and isn't online.
 - Don't promise a delivery date. USPS First-Class Mail usually takes a few business days, but MailSnail can't guarantee it.
-- For a certified letter, the status shows that it entered the mail. With a return receipt, proof of delivery comes from the recipient's signature: a PDF for an electronic receipt, or the green card mailed back to the sender's address.
+
+## Cancel a letter
+
+If the user wants to stop a letter, call `cancel_letter` with its `receipt_token`. Confirm with them first: a cancelled letter is not mailed. It works only before the printer starts, usually about a day after sending, and only for letters paid from their MailSnail balance. The full price goes back to the balance. If the result is `too_late_to_cancel`, the letter is already being printed and will be mailed.
 
 ## Balance
 
