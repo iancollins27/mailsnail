@@ -5,6 +5,8 @@
 
 > An MCP server that lets AI agents send physical mail — letters and postcards. Default mode requires no signup: agents pay per piece via Stripe Shared Payment Tokens. Open source and provider-agnostic. Powers [Mailsnail](https://mailsnail.dev).
 
+> **Using Claude, ChatGPT or Cursor? You probably want the hosted connector, not this package.** Add `https://api.mailsnail.dev/mcp` as a connector and sign in; there's nothing to install and you pay by card or from a balance. Setup for every app: [mailsnail.dev/setup](https://mailsnail.dev/setup). This package is for bring-your-own Click2Mail/Lob accounts, self-hosted gateways, failover chains, and agents that can mint a Stripe Shared Payment Token.
+
 ```
 agent  ──tools──>  mailsnail  ──HTTPS──>  gateway (Stripe + print provider)  ──USPS──>  mailbox
                        └──or directly: your Click2Mail / Lob account (BYOK)
