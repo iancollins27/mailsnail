@@ -8,14 +8,16 @@
 
 Agents have every channel except one. They can email, text, call, and post to every feed — but until now, putting a real, postmarked envelope in a mailbox meant a human signing up for a print-provider account, provisioning API keys, and wiring billing. Mailsnail closes that gap:
 
-- **No signup in managed mode.** Agents pay per piece via Stripe Shared Payment Tokens over the [Machine Payments Protocol](https://docs.stripe.com/payments/machine/mpp) (HTTP 402). First letter can go out minutes after install. Priced at our cost: from $1.21 first-class and $8.61 certified, no subscription.
+- **Nothing to install.** Add one URL to Claude, ChatGPT, Cursor or any MCP client and sign in. Pay for one letter by card or fund a balance, priced at our cost: from $1.21 first-class and $8.61 certified, no subscription. Agents that can mint a Stripe Shared Payment Token can also pay per piece with no account, over the [Machine Payments Protocol](https://docs.stripe.com/payments/machine/mpp) (HTTP 402).
 - **No lock-in, ever.** The provider layer is open and swappable: bring your own Click2Mail or Lob account, self-host the whole gateway, or chain providers for failover. The managed service is a convenience, not a cage.
 - **Built for compliance mail.** Certified letters with `extra_service: "certified"` — the mail that legally *must* be physical (preliminary lien notices, legal notices) and must not miss its deadline because one print API had a bad day.
 
 ```bash
-claude mcp add mailsnail -- npx -y mailsnail
-# then: "Mail a thank-you letter to my aunt."
+claude mcp add -t http mailsnail https://api.mailsnail.dev/mcp
+# then /mcp → mailsnail → Authenticate, and: "Mail a thank-you letter to my aunt."
 ```
+
+In Claude Desktop or ChatGPT, add `https://api.mailsnail.dev/mcp` as a custom connector. Steps for every app: [mailsnail.dev/setup](https://mailsnail.dev/setup). Running your own Click2Mail or Lob account instead? See [Ways to run it](#ways-to-run-it).
 
 ## Hosted connector and plugins
 
@@ -37,11 +39,12 @@ The quickest start needs no install. Add `https://api.mailsnail.dev/mcp` as a cu
 | [`@mailsnail/gateway`](packages/gateway) | Self-hostable REST API: BYO provider credentials, `body_text`→PDF rendering, proofs, invocation logging. The managed service at `api.mailsnail.dev` runs the same wire protocol. |
 | [`spec/`](spec) | The provider-neutral mail-piece schema + the failover-safety contract. Implement it and anything — including a print shop — becomes a Mailsnail-compatible node. |
 
-## Four ways to run it
+## Ways to run it
 
 | Mode | Credentials | Paying | Good for |
 |---|---|---|---|
-| **managed** (default) | none | agent, per piece (Stripe SPT) | agents; zero-setup |
+| **hosted connector** (`api.mailsnail.dev/mcp`) | none; you sign in | you, per letter by card or from a balance | people in Claude, ChatGPT, Cursor; zero-setup |
+| **managed** (stdio default) | none | agent, per piece (Stripe SPT) | agents that can mint an SPT |
 | **gateway** | your own, on your server | your provider account | teams; PII stays in your infra |
 | **click2mail / lob** (BYOK) | yours, local env | your provider account | direct control, one provider |
 | **failover chain** | yours, per provider | your provider accounts | mail that must not miss deadlines |
