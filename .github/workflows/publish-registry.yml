@@ -1,0 +1,68 @@
+name: publish-registry
+
+# Publishes packages/mailsnail/server.json to the official MCP registry
+# (registry.modelcontextprotocol.io), which the GitHub MCP registry, VS Code and
+# most directories copy from. Auth is GitHub OIDC: no secret, no device-flow
+# login, no laptop. The io.github.iancollins27/* namespace is proven by this
+# workflow running in an iancollins27 repo.
+#
+# Runs when server.json changes on main, or by hand from the Actions tab.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - packages/mailsnail/server.json
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: publish-registry
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: packages/mailsnail
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check server.json against npm
+        # The registry rejects a record whose packages[].version is not on npm,
+        # and checks mcpName ownership. Fail early with a readable message.
+        run: |
+          set -euo pipefail
+          name=$(jq -r .name server.json)
+          mcp_name=$(jq -r .mcpName package.json)
+          if [ "$name" != "$mcp_name" ]; then
+            echo "::error::server.json name ($name) != package.json mcpName ($mcp_name)"; exit 1
+          fi
+          pkg_version=$(jq -r '.packages[] | select(.registryType=="npm") | .version' server.json)
+          if ! curl -fsS "https://registry.npmjs.org/mailsnail/$pkg_version" > /dev/null; then
+            echo "::error::server.json pins mailsnail@$pkg_version, which is not on npm. Pin it to 'npm view mailsnail version'."; exit 1
+          fi
+          echo "Publishing $name record $(jq -r .version server.json) (npm package $pkg_version)"
+
+      - name: Install mcp-publisher
+        run: |
+          set -euo pipefail
+          os=$(uname -s | tr '[:upper:]' '[:lower:]')
+          arch=$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/')
+          curl -fsSL "https://github.com/modelcontextprotocol/registry/releases/latest/download/mcp-publisher_${os}_${arch}.tar.gz" | tar xz mcp-publisher
+          ./mcp-publisher --help > /dev/null
+
+      - name: Log in with GitHub OIDC
+        run: ./mcp-publisher login github-oidc
+
+      - name: Publish
+        run: ./mcp-publisher publish
+
+      - name: Show what the registry now serves
+        run: |
+          curl -fsS "https://registry.modelcontextprotocol.io/v0/servers?search=io.github.iancollins27/mailsnail" \
+            | jq '.servers[] | select(._meta["io.modelcontextprotocol.registry/official"].isLatest) | .server | {version, description, remotes}'

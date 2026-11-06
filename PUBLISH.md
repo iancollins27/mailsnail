@@ -92,9 +92,17 @@ tag push, and an agent can do the whole thing.
 
 ## Official MCP registry
 
-`server.json` carries the version separately, so the registry needs its own push
-(also a device-flow login — start it only when you can approve immediately; the
-code expires):
+`server.json` carries the version separately, so the registry needs its own push.
+
+**Preferred: let CI do it.** `.github/workflows/publish-registry.yml` publishes
+`packages/mailsnail/server.json` with GitHub OIDC whenever that file changes on
+`main`, and can be run by hand from the Actions tab (`publish-registry` → Run
+workflow). No login, no laptop. It first checks that `packages[].version` exists
+on npm and that `name` matches `mcpName`, so a bad record fails before it reaches
+the registry. Bump the top-level `version` with every change.
+
+Fallback, from your machine (a device-flow login — start it only when you can
+approve immediately; the code expires):
 
 ```powershell
 cd "C:\Users\ian\Code Projects\mailsnail\oss\packages\mailsnail"
@@ -133,4 +141,4 @@ When an npm release does go out, set both to the new number in the same commit.
 - [ ] Inter-package dependency ranges point at the new core version
 - [ ] Publish core → gateway → mailsnail
 - [ ] `npx -y mailsnail@latest doctor` behaves as expected
-- [ ] `mcp-publisher publish` for the registry
+- [ ] Registry: merge the `server.json` bump to `main` (CI publishes), or run `mcp-publisher publish`
