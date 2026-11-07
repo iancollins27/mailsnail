@@ -27,7 +27,7 @@
       "environmentVariables": [
         {
           "name": "MAIL_PROVIDER",
-          "description": "Where to mail from: 'managed' (default, no signup, pay-per-piece via Stripe), 'click2mail' (BYO account), or 'lob' (BYO key).",
+          "description": "For self-hosting only; most people should add the hosted URL instead. 'click2mail' (your own account) or 'lob' (your own key). 'managed' needs a Stripe Shared Payment Token that most AI apps can't create.",
           "default": "managed",
           "isRequired": true
         },
