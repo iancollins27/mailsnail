@@ -1,0 +1,81 @@
+name: release
+
+# Publishes @mailsnail/core, @mailsnail/gateway and mailsnail to npm using npm
+# Trusted Publishing (GitHub Actions OIDC): no token, no passkey, no laptop.
+# One-time setup per package on npmjs.com is described in PUBLISH.md.
+#
+# Requirements, per https://docs.npmjs.com/trusted-publishers :
+#   - npm CLI >= 11.5.1 and Node >= 22.14.0 (hence Node 22 + `npm install -g npm@latest`)
+#   - id-token: write permission
+#   - the trusted publisher on npmjs.com must name this exact file: release.yml
+#   - package.json repository.url must match this GitHub repo exactly
+#
+# This workflow deliberately does NOT touch server.json or the MCP registry.
+# After a release, bump packages/mailsnail/server.json packages[].version in a
+# follow-up commit; that triggers publish-registry.yml.
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          registry-url: https://registry.npmjs.org
+
+      - name: Upgrade npm (trusted publishing needs >= 11.5.1)
+        run: |
+          npm install -g npm@latest
+          echo "node $(node --version), npm $(npm --version)"
+
+      - name: Check tag matches package version
+        if: github.ref_type == 'tag'
+        run: |
+          set -euo pipefail
+          tag_version="${GITHUB_REF_NAME#v}"
+          pkg_version=$(node -p "require('./packages/mailsnail/package.json').version")
+          if [ "$tag_version" != "$pkg_version" ]; then
+            echo "::error::Tag ${GITHUB_REF_NAME} (version $tag_version) does not match packages/mailsnail/package.json version $pkg_version. Fix the version or re-tag."
+            exit 1
+          fi
+          echo "Tag ${GITHUB_REF_NAME} matches mailsnail@$pkg_version"
+
+      - run: npm ci
+
+      - run: npm test
+
+      - name: Publish to npm (core, then gateway, then mailsnail)
+        run: |
+          set -euo pipefail
+          for dir in core gateway mailsnail; do
+            cd "$GITHUB_WORKSPACE/packages/$dir"
+            name=$(node -p "require('./package.json').name")
+            version=$(node -p "require('./package.json').version")
+            if npm view "$name@$version" version > /dev/null 2>&1; then
+              echo "::notice::$name@$version is already on npm, skipping"
+              continue
+            fi
+            echo "Publishing $name@$version"
+            npm publish --access public --provenance
+          done
+
+      - name: Reminder, registry record
+        run: |
+          version=$(node -p "require('./packages/mailsnail/package.json').version")
+          echo "::notice::npm publish done. Next: bump packages[].version in packages/mailsnail/server.json to $version in a follow-up commit; that triggers publish-registry.yml."
