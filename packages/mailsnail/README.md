@@ -128,7 +128,7 @@ For Lob, `MAIL_MCP_ALLOW_LIVE=1` is also required to start with a `live_` key. F
 | Tool | What it does |
 |---|---|
 | `doctor` | Preflight connectivity check against the configured backend. Free, read-only, never mails. Reports exactly which `host:port` to allowlist when a sandbox or corporate proxy is in the way. Also a CLI: `npx mailsnail doctor`. |
-| `verify_address` | Validate + normalize a US address. Free on Lob; on Click2Mail uses CASS via a one-shot address list. |
+| `verify_address` | Check a US address against USPS records. Free on Lob, which also returns the normalized address; on Click2Mail uses CASS via a one-shot address list and reports deliverable or undeliverable. |
 | `preview_letter` | Proof PDF + exact price WITHOUT charging or mailing. Recommended first step; returns a `draft_id` you confirm with `send_letter`. Managed/gateway mode. |
 | `send_letter` | Send a letter from plain text (managed/gateway renders the PDF) or a public PDF URL. `extra_service: 'certified'` for certified mail. |
 | `send_postcard` | Send a 4×6 / 6×9 / 6×11 postcard from a PDF URL. |

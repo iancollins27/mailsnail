@@ -177,7 +177,7 @@ server.tool(
 
 server.tool(
   "verify_address",
-  "Verify and normalize a US mailing address. Run this on user-provided addresses before sending mail.",
+  "Check a US mailing address against USPS records. Returns `deliverability`: `deliverable`, or `undeliverable` with a `reason`. A normalized address is included when the provider returns one (Lob does, Click2Mail does not).",
   {
     address_line1: z.string(),
     address_line2: z.string().optional(),

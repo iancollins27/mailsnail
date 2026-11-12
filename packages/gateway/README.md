@@ -34,7 +34,7 @@ docker run -p 8080:8080 -e MAIL_PROVIDER=click2mail -e CLICK2MAIL_USERNAME=... \
 | Route | What it does |
 |---|---|
 | `GET /healthz` | `{ ok, mode, provider }` |
-| `POST /v1/verify` | Verify + normalize a US address |
+| `POST /v1/verify` | Check a US address against USPS records |
 | `POST /v1/preview` | Draft + hosted proof PDF, nothing mailed. Returns `draft_id` (drafting providers) or a render-only proof |
 | `GET /v1/preview/:token` | The proof PDF (30-min TTL, credential-free) |
 | `POST /v1/letters` | Send a letter (`body_text` is rendered server-side, or pass `file_url`); `{ draft_id }` confirms a preview |

@@ -44,6 +44,32 @@ function isCertifiedService(extra_service) {
   );
 }
 
+// Reads the CASS result out of a standardized address list. Click2Mail reports
+// counts per outcome, not a per-address flag: `standard` means USPS matched the
+// address, `nonstandard` means it could not be matched, and `nonmailable` /
+// `noService` mean it cannot be delivered at all. List status 3 only says CASS
+// finished, so it must not be read as "deliverable".
+export function cassDeliverability(xml) {
+  const count = (tag) => Number(pickXmlTag(xml, tag) ?? 0) || 0;
+  if (count("nonmailable") > 0 || count("noService") > 0) {
+    return { deliverability: "undeliverable", reason: "USPS cannot deliver mail to this address." };
+  }
+  if (count("nonstandard") > 0) {
+    return {
+      deliverability: "undeliverable",
+      reason: "USPS does not recognize this address. Check the street, city, state and ZIP code.",
+    };
+  }
+  if (count("international") > 0) {
+    return {
+      deliverability: "unknown",
+      reason: "This looks like an address outside the US, which the USPS check does not cover.",
+    };
+  }
+  if (count("standard") > 0) return { deliverability: "deliverable" };
+  return { deliverability: "unknown", reason: "The address check returned no result." };
+}
+
 export class Click2MailProvider {
   constructor({ username, password, allowLive = false } = {}) {
     if (!username || !password) {
@@ -288,8 +314,8 @@ ${addrXml}
 
   /**
    * Verify a single US address. Click2Mail has no standalone verify endpoint:
-   * create a single-address list, wait for CASS, return the standardized
-   * address. Slow-ish (~2-30s of polling).
+   * create a single-address list, wait for CASS, and report whether USPS
+   * matched the address. Slow-ish (~2-30s of polling).
    */
   async verifyAddress(input) {
     const list = await this._createAddressList([
@@ -303,12 +329,9 @@ ${addrXml}
       },
     ]);
     const ready = await this._waitForCass(list.id);
-    const normalized = await this._normalizedAddress(list.id);
-    return {
-      deliverability: ready.status === "3" ? "deliverable" : ready.description,
-      normalized,
-      raw: ready,
-    };
+    // Click2Mail has no endpoint that returns the standardized address
+    // (/addressLists/{id}/addresses is a 404), so `normalized` is null here.
+    return { ...cassDeliverability(ready.raw), normalized: null, raw: ready };
   }
 
   /**
