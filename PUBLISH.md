@@ -10,6 +10,50 @@
 > gateways and BYO Click2Mail/Lob are unaffected — they still look up by job id, and
 > the client still passes it through.
 
+## Releasing from CI (preferred)
+
+`.github/workflows/release.yml` publishes `@mailsnail/core`, `@mailsnail/gateway` and
+`mailsnail` to npm with **Trusted Publishing** (GitHub Actions OIDC): no token, no
+passkey, no laptop. It needs npm CLI >= 11.5.1 and Node >= 22.14.0, which the workflow
+sets up (see <https://docs.npmjs.com/trusted-publishers>).
+
+### One-time setup (do this once, in a browser)
+
+For **each** of the three packages (`@mailsnail/core`, `@mailsnail/gateway`, `mailsnail`):
+npmjs.com → the package → **Settings** → **Trusted Publisher** → **GitHub Actions**, then:
+
+- Owner: `iancollins27`
+- Repository: `mailsnail`
+- Workflow filename: `release.yml`
+- Environment: leave blank
+
+Fields are case-sensitive, and npm does not validate them on save, so a typo only shows
+up as a publish error.
+
+### Releasing
+
+1. `npm test` green at the repo root.
+2. Bump versions in `packages/*/package.json` (and inter-package ranges, see the checklist).
+3. Commit and push to `main`.
+4. Tag and push; the tag must equal the `mailsnail` version:
+
+   ```
+   git tag v0.7.0 && git push origin v0.7.0
+   ```
+
+The workflow checks the tag against `packages/mailsnail/package.json`, runs `npm ci` and
+`npm test`, then publishes core → gateway → mailsnail with provenance. A package whose
+exact version is already on npm is skipped, so re-running is safe (it can also be run by
+hand from the Actions tab).
+
+It does not touch the MCP registry. Afterwards, bump `packages[].version` in
+`packages/mailsnail/server.json` to the new npm version in a follow-up commit to `main`;
+that triggers `publish-registry.yml`.
+
+### Fallback: publish from your laptop
+
+The rest of this section is the manual route, for when CI is unavailable.
+
 npm 2FA on this account is enforced at publish time and **granular-token 2FA
 bypass does not work** (the "Bypass 2FA" checkbox silently doesn't stick, and the
 resulting token 403s with *"granular access token with bypass 2fa enabled is
@@ -81,7 +125,7 @@ npx -y mailsnail@latest doctor   # expect 0.7.0 behavior: a reachability report
 npm view mailsnail version       # expect 0.7.0
 ```
 
-## Making this unattended (worth doing once)
+## Trusted Publishing background
 
 npm **Trusted Publishing** (OIDC) removes the passkey from the loop entirely: a
 GitHub Actions workflow publishes with a short-lived token minted from the run's
