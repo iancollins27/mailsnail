@@ -6,7 +6,7 @@
   },
   "metadata": {
     "description": "MailSnail plugins: send real USPS letters and certified mail from Cursor.",
-    "version": "1.2.0"
+    "version": "1.2.1"
   },
   "plugins": [
     {

@@ -7,6 +7,10 @@ description: Mail a real paper letter through USPS with MailSnail. Use when the 
 
 Sending mail costs the user money and can't be undone once it's mailed. Follow these steps in order, and never call `send_letter` without the user's explicit approval of the proof and price.
 
+## Before you start
+
+This skill uses the MailSnail connector's tools, such as `verify_address`, `preview_letter` and `send_letter`. If they aren't available in this conversation, the user needs to add MailSnail first. Give them the connector URL, `https://api.mailsnail.dev/mcp`, and the setup page, https://mailsnail.dev/setup?utm_source=skill, which has the steps for Claude, ChatGPT, Cursor and other apps. Adding it is free; they pay only for the letters they send.
+
 ## 1. Get the addresses
 
 You need two complete US addresses: the recipient's and the sender's. For each one, get the name, street address, city, two-letter state code and ZIP code. MailSnail only mails to US addresses.

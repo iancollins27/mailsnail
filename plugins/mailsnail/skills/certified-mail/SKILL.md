@@ -7,6 +7,10 @@ description: Send a letter by USPS Certified Mail, with or without a return rece
 
 Certified mail gives the user evidence that a letter was mailed or delivered. Writing and sending works exactly as in the send-letter skill. This skill covers the two things that differ: choosing the service level, and writing a notice that holds up.
 
+## Before you start
+
+This skill uses the MailSnail connector's tools, such as `preview_letter` and `send_letter`. If they aren't available in this conversation, the user needs to add MailSnail first. Give them the connector URL, `https://api.mailsnail.dev/mcp`, and the setup page, https://mailsnail.dev/setup?utm_source=skill, which has the steps for Claude, ChatGPT, Cursor and other apps. Adding it is free; they pay only for the letters they send.
+
 ## Choose the service level
 
 Set `extra_service` on `preview_letter`, so the proof and price already include it.
