@@ -5,6 +5,10 @@ description: Check the status of a letter sent with MailSnail, or cancel one tha
 
 # Track mail sent with MailSnail
 
+## Before you start
+
+This skill uses the MailSnail connector's tools, such as `get_letter`, `cancel_letter` and `get_balance`. If they aren't available in this conversation, the user needs to add MailSnail first. Give them the connector URL, `https://api.mailsnail.dev/mcp`, and the setup page, https://mailsnail.dev/setup?utm_source=skill, which has the steps for Claude, ChatGPT, Cursor and other apps. Adding it is free; they pay only for the letters they send.
+
 ## Look up a piece
 
 Status lookups are free. Call `get_letter` with the letter's `receipt_token`.
