@@ -11,13 +11,13 @@ Certified mail gives the user evidence that a letter was mailed or delivered. Wr
 
 Set `extra_service` on `preview_letter`, so the proof and price already include it.
 
-| `extra_service` | What the sender gets | Price |
-|---|---|---|
-| `certified` | USPS tracking and proof of mailing | $8.61 |
-| `certified_return_receipt_electronic` | Also a PDF of the recipient's delivery signature | $11.64 |
-| `certified_return_receipt` | Also the physical green card (PS Form 3811), signed on delivery and mailed back to the sender's address | $14.27 |
+| `extra_service` | What the sender gets | From a balance | One letter by card |
+|---|---|---|---|
+| `certified` | USPS tracking and proof of mailing | $8.61 | $8.83 |
+| `certified_return_receipt_electronic` | Also a PDF of the recipient's delivery signature | $11.64 | $11.83 |
+| `certified_return_receipt` | Also the physical green card (PS Form 3811), signed on delivery and mailed back to the sender's address | $14.27 | $14.42 |
 
-Prices are for one page; the preview shows the exact price.
+Prices are for one page; the preview shows the exact price. Paying for one letter by card costs a little more than paying from a MailSnail balance, because that one payment carries the whole card fee.
 
 **Ask what the lease, contract or law says before choosing.** If it names a delivery method, match it exactly. "Certified mail, return receipt requested" asks for a return receipt, and the physical green card is the traditional form.
 
