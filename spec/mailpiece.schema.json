@@ -78,7 +78,7 @@
       "description": "Standard result returned by every adapter for address verification.",
       "required": ["deliverability"],
       "properties": {
-        "deliverability": { "type": "string", "description": "'deliverable' or a provider-specific reason it isn't." },
+        "deliverability": { "type": "string", "description": "'deliverable', 'undeliverable' or 'unknown'. Some providers return their own values." },
         "normalized": { "$ref": "#/definitions/address" },
         "raw": { "description": "Provider-native response, untranslated." }
       }
