@@ -1,7 +1,7 @@
 {
   "name": "mailsnail",
   "displayName": "MailSnail",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Send real USPS letters and certified mail from Claude. Claude writes the letter, checks the address, and shows you the PDF proof and exact price; nothing is mailed until you approve.",
   "author": {
     "name": "MailSnail",
@@ -11,5 +11,10 @@
   "homepage": "https://mailsnail.dev",
   "repository": "https://github.com/iancollins27/mailsnail",
   "license": "MIT",
-  "keywords": ["mail", "letter", "usps", "certified-mail", "postal", "notice"]
+  "keywords": ["mail", "letter", "usps", "certified-mail", "postal", "notice"],
+  "icon": "./assets/logo.png",
+  "documentationUrl": "https://mailsnail.dev/setup",
+  "supportUrl": "https://mailsnail.dev/contact",
+  "privacyPolicyUrl": "https://mailsnail.dev/privacy",
+  "termsOfServiceUrl": "https://mailsnail.dev/terms"
 }
