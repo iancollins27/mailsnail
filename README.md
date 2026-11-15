@@ -17,7 +17,7 @@ claude mcp add -t http mailsnail https://api.mailsnail.dev/mcp
 # then /mcp → mailsnail → Authenticate, and: "Mail a thank-you letter to my aunt."
 ```
 
-In Claude Desktop or ChatGPT, add `https://api.mailsnail.dev/mcp` as a custom connector. Steps for every app: [mailsnail.dev/setup](https://mailsnail.dev/setup). Running your own Click2Mail or Lob account instead? See [Ways to run it](#ways-to-run-it).
+In Claude Desktop or ChatGPT, add `https://api.mailsnail.dev/mcp` as a custom connector. In Cursor, press [Add to Cursor](https://cursor.com/en/install-mcp?name=mailsnail&config=eyJ1cmwiOiJodHRwczovL2FwaS5tYWlsc25haWwuZGV2L21jcCJ9). In VS Code, press [Add to VS Code](https://vscode.dev/redirect?url=vscode%3Amcp%2Finstall%3F%257B%2522name%2522%253A%2522mailsnail%2522%252C%2522type%2522%253A%2522http%2522%252C%2522url%2522%253A%2522https%253A%252F%252Fapi.mailsnail.dev%252Fmcp%2522%257D). In Codex, run `codex mcp add mailsnail --url https://api.mailsnail.dev/mcp`, then `codex mcp login mailsnail`. Steps for every app: [mailsnail.dev/setup](https://mailsnail.dev/setup). Running your own Click2Mail or Lob account instead? See [Ways to run it](#ways-to-run-it).
 
 ## Hosted connector and plugins
 
