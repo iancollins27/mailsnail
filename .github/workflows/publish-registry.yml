@@ -6,7 +6,10 @@ name: publish-registry
 # login, no laptop. The io.github.iancollins27/* namespace is proven by this
 # workflow running in an iancollins27 repo.
 #
-# Runs when server.json changes on main, or by hand from the Actions tab.
+# Runs when server.json changes on main, or by hand from the Actions tab. A run
+# started by hand publishes the record on the branch it is started from, so a
+# record can go out before its commit reaches main; the run on main then finds
+# the version already there and publishes nothing.
 
 on:
   push:
@@ -32,23 +35,40 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Check server.json against npm
-        # The registry rejects a record whose packages[].version is not on npm,
-        # and checks mcpName ownership. Fail early with a readable message.
+      - name: Check server.json
+        id: check
+        # The registry takes each version once and rejects a record that pins an
+        # npm version npm does not serve. Stop early with a readable message.
         run: |
           set -euo pipefail
           name=$(jq -r .name server.json)
+          version=$(jq -r .version server.json)
           mcp_name=$(jq -r .mcpName package.json)
           if [ "$name" != "$mcp_name" ]; then
             echo "::error::server.json name ($name) != package.json mcpName ($mcp_name)"; exit 1
           fi
-          pkg_version=$(jq -r '.packages[] | select(.registryType=="npm") | .version' server.json)
-          if ! curl -fsS "https://registry.npmjs.org/mailsnail/$pkg_version" > /dev/null; then
-            echo "::error::server.json pins mailsnail@$pkg_version, which is not on npm. Pin it to 'npm view mailsnail version'."; exit 1
-          fi
-          echo "Publishing $name record $(jq -r .version server.json) (npm package $pkg_version)"
+          # The record lists the hosted server only. If an npm package is listed
+          # again, its version must be one npm serves.
+          for pkg_version in $(jq -r '(.packages // [])[] | select(.registryType=="npm") | .version' server.json); do
+            if ! curl -fsS "https://registry.npmjs.org/mailsnail/$pkg_version" > /dev/null; then
+              echo "::error::server.json pins mailsnail@$pkg_version, which is not on npm. Pin it to 'npm view mailsnail version'."; exit 1
+            fi
+          done
+          encoded=$(jq -rn --arg n "$name" '$n | @uri')
+          status=$(curl -sS -o /dev/null -w '%{http_code}' "https://registry.modelcontextprotocol.io/v0/servers/$encoded/versions/$version")
+          case "$status" in
+            200)
+              echo "::notice::Record $version of $name is already in the registry. Nothing to publish."
+              echo "publish=false" >> "$GITHUB_OUTPUT" ;;
+            404)
+              echo "Publishing $name record $version"
+              echo "publish=true" >> "$GITHUB_OUTPUT" ;;
+            *)
+              echo "::error::The registry answered $status when asked for $name $version. Run this again."; exit 1 ;;
+          esac
 
       - name: Install mcp-publisher
+        if: steps.check.outputs.publish == 'true'
         run: |
           set -euo pipefail
           os=$(uname -s | tr '[:upper:]' '[:lower:]')
@@ -57,9 +77,11 @@ jobs:
           ./mcp-publisher --help > /dev/null
 
       - name: Log in with GitHub OIDC
+        if: steps.check.outputs.publish == 'true'
         run: ./mcp-publisher login github-oidc
 
       - name: Publish
+        if: steps.check.outputs.publish == 'true'
         run: ./mcp-publisher publish
 
       - name: Show what the registry now serves
