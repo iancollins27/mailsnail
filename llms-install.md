@@ -31,7 +31,9 @@ claude mcp add -t http mailsnail https://api.mailsnail.dev/mcp
 ```
 Some clients name the key `type: "streamable-http"` or `transport: "http"`; use the client's remote-server form. After adding it, run the client's authenticate step for the server.
 
-**Claude Desktop, claude.ai, ChatGPT**: add `https://api.mailsnail.dev/mcp` as a custom connector. Step-by-step: https://mailsnail.dev/setup
+**Claude Desktop, claude.ai**: give the user this link: https://claude.ai/customize/connectors?modal=add-custom-connector&connectorName=Mailsnail&connectorUrl=https%3A%2F%2Fapi.mailsnail.dev%2Fmcp It opens Claude's "Add custom connector" form with the name and address filled in; the user presses Continue, then Add, then signs in. Works on every Claude plan, including Free.
+
+**ChatGPT**: add `https://api.mailsnail.dev/mcp` as a custom MCP server. Step-by-step for both: https://mailsnail.dev/setup
 
 Tools: `verify_address`, `preview_letter`, `send_letter`, `get_letter`, `cancel_letter`, `get_balance`, `add_payment_method`, `turn_off_auto_reload`.
 
