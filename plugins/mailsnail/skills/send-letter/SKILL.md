@@ -63,9 +63,9 @@ Ask whether to send it at that price. Only a clear go-ahead after the user has s
 
 If they want changes, edit the text and call `preview_letter` again. Each preview returns a new `draft_id`; use the latest one.
 
-A draft expires 30 minutes after its preview (`expires_at`). If the user comes back later than that, preview again and get approval again.
+The proof link stops working 30 minutes after the preview (`expires_at`). The draft itself keeps much longer: `send_letter` takes its `draft_id` until `draft_valid_until`, a week after the preview. So a user who approved the letter and pays later, even the next day, needs no new preview: send with the same `draft_id`. Preview again only if the user wants changes, or hasn't yet seen the proof and its link no longer opens.
 
-When mailing several letters, preview each one. Then get approval for the whole batch with the number of letters and the total price stated.
+When mailing several letters, preview each one. Then get approval for the whole batch with the number of letters and the total price stated. A user without a balance can pay for the whole batch in one card payment, which usually comes to less than paying letter by letter; step 6 says how.
 
 ## 6. Send
 
@@ -74,11 +74,14 @@ Call `send_letter` with only the approved `draft_id`. It mails exactly that proo
 Read the result's `message` every time: it says what happened to the letter and to the money. These are the cases:
 
 - **Sent.** The result has a `receipt_token` and `amount_charged_cents`. Go to step 7.
-- **Payment needed (`payment_required`).** Nothing was charged or mailed. The result has links for the user to open:
-  - `pay_url`: a MailSnail page where they pay for just this letter by card. No card is saved. Offer this first.
+- **Payment needed** (an error such as `payment_setup_required`, `insufficient_balance` or `payment_required`). Nothing was charged or mailed. The result has links for the user to open:
+  - `pay_url`: a MailSnail page where they pay for just this letter by card. No card is saved. Offer this first for a single letter.
+  - `pay_all_url`: one card payment of `pay_all_cents` that covers all `pay_all_letters` letters waiting for payment: never more than paying one by one, and usually less. It appears once `send_letter` has been called for two or more of them. For a batch, call `send_letter` for every approved draft first, then offer the `pay_all_url` from the last result.
   - `setup_url`: a Stripe page where they add funds to a MailSnail balance instead, which makes each letter a little cheaper. Offer it to someone who expects to send more mail.
 
-  MailSnail never sees the card number. After the user has paid, call `send_letter` again with the same `draft_id`.
+  MailSnail never sees the card number. The letters stay ready while the user pays, until `draft_valid_until`, so there is no hurry and no new preview. After the user has paid, call `send_letter` again with the same `draft_id`, once for each letter.
+- **`reload_in_progress`.** A payment is already on its way to the balance. Call `send_letter` again with the same `draft_id` in a few seconds.
+- **`team_balance_exhausted`.** The user is on a team's shared balance and can't add funds themselves. Tell them an admin of their organization has to; then send with the same `draft_id`.
 - **The draft expired or is unknown (`draft_not_found`).** Preview again and get approval again.
 - **You can't tell whether a send went through,** for example after a timeout. Call `send_letter` again with the same `draft_id`. A `draft_id` is only ever mailed once, so a retry returns the original result instead of mailing a second letter.
 - **`send_in_progress_or_unconfirmed`.** An earlier call for this draft hasn't finished. Don't preview a new copy: a new draft could mail the letter twice. Wait a minute and call `send_letter` again with the same `draft_id`. If the answer stays the same, give the user hello@mailsnail.dev.
@@ -91,10 +94,10 @@ Tell the user that the letter was sent and what it cost. Give them its `receipt_
 
 ## Balance and payment
 
-Nobody has to add funds before sending: a send that the balance can't cover returns the payment links in step 6.
+Nobody has to add funds before sending: a send that the balance can't cover returns the payment links in step 6, for exactly what the letters cost. That is the way to pay for letters that are ready now, one or several.
 
 - `get_balance` shows the balance, whether a card is saved, and the auto-reload settings.
-- `add_payment_method` returns a Stripe link (`setup_url`) for adding funds ahead of time. By default it's a one-time payment of $25, and the card isn't saved. Pass `amount_cents` for another amount, from $10 to $500.
+- `add_payment_method` returns a Stripe link (`setup_url`) for adding funds ahead of time, for a user who wants a balance for future mail. By default it's a one-time payment of $25, and the card isn't saved. Pass `amount_cents` for another amount, from $10 to $500. Don't offer it as the way to pay for a few letters that are ready: their own payment links cost the user only those letters.
   - Pass `auto_reload: true` only if the user asks for automatic reloads. The Stripe page then also saves the card and shows the reload terms the user agrees to.
   - When a card is already saved, the result also includes a link for updating the card and viewing receipts.
 - `turn_off_auto_reload` stops automatic charges. Use it whenever the user asks.
