@@ -90,7 +90,7 @@ Read the result's `message` every time: it says what happened to the letter and 
 
 ## 7. Confirm
 
-Tell the user that the letter was sent and what it cost. Give them its `receipt_token` and ask them to keep it: it's the only way to check the letter's status later (see the track-mail skill).
+Tell the user that the letter was sent and what it cost. Give them its `receipt_token` and ask them to keep it: it's the direct way to check the letter's status later (the track-mail skill says how to find a letter without it).
 
 ## Balance and payment
 

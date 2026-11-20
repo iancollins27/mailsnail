@@ -15,7 +15,7 @@ Status lookups are free. Call `get_letter` with the letter's `receipt_token`.
 
 Each send's result includes a `receipt_token`. Use that, not the `id` field: `id` is the printer's job number and won't resolve.
 
-If the user doesn't have the `receipt_token`, look for it earlier in this conversation. No tool lists past mail. If it isn't here, the user can email hello@mailsnail.dev with the recipient's name and the date sent.
+If the user doesn't have the `receipt_token`, look for it earlier in this conversation. If it isn't here, call `get_letter` with the word `recent` in place of a token. A token that matches no letter is answered with `letter_not_found` and `recent_letters`: the letters the signed-in account mailed in the last 90 days, newest first, each with when it was sent, what kind it was, the recipient where one was recorded, and its `receipt_token`. Show the user that list, ask which letter they mean if there is more than one, and call `get_letter` again with its token. For a letter older than that, or one sent under another sign-in, the user can email hello@mailsnail.dev with the recipient's name and the date sent.
 
 ## Explain the result
 
