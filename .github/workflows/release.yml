@@ -11,8 +11,8 @@ name: release
 #   - package.json repository.url must match this GitHub repo exactly
 #
 # This workflow deliberately does NOT touch server.json or the MCP registry.
-# After a release, bump packages/mailsnail/server.json packages[].version in a
-# follow-up commit; that triggers publish-registry.yml.
+# The registry record lists the hosted server only, so a release needs no
+# registry change.
 
 on:
   push:
@@ -77,5 +77,4 @@ jobs:
 
       - name: Reminder, registry record
         run: |
-          version=$(node -p "require('./packages/mailsnail/package.json').version")
-          echo "::notice::npm publish done. Next: bump packages[].version in packages/mailsnail/server.json to $version in a follow-up commit; that triggers publish-registry.yml."
+          echo "::notice::npm publish done. The registry record lists the hosted server only, so it needs no change."

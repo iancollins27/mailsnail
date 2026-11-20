@@ -2,7 +2,7 @@
   "name": "mailsnail",
   "mcpName": "io.github.iancollins27/mailsnail",
   "version": "0.7.0",
-  "description": "Send physical mail (USPS letters, postcards, certified mail) from AI agents. MCP server with managed mode (no signup, pay-per-piece via Stripe Link), self-hosted gateway, Click2Mail BYOK, Lob BYOK, and multi-provider failover. Powers Mailsnail.",
+  "description": "MCP server for sending physical mail (USPS letters, postcards, certified mail) from AI agents through your own Click2Mail or Lob account or a self-hosted gateway, with multi-provider failover. Most people want the hosted server instead: https://api.mailsnail.dev/mcp",
   "type": "module",
   "bin": {
     "mailsnail": "src/index.js"

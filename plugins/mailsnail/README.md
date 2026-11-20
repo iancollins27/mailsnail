@@ -48,7 +48,7 @@ The plugin has no code of its own: only skills (Markdown instructions) and a con
 
 When Claude uses a MailSnail tool, the tool's inputs go to MailSnail at `api.mailsnail.dev`: names and addresses, the letter text or PDF link, and the options you chose. MailSnail never receives your chat history.
 
-To print and mail a letter, MailSnail sends it to a third-party print partner (currently Click2Mail), which hands it to USPS. Card payments are made on Stripe's own pages, and MailSnail never sees your card number. Sign-in is handled by WorkOS.
+To print and mail a letter, MailSnail sends it to a third-party print partner, which hands it to USPS. Card payments are made on Stripe's own pages, and MailSnail never sees your card number. Sign-in is handled by WorkOS. Every company MailSnail uses is named at https://mailsnail.dev/subprocessors.
 
 Privacy policy: https://mailsnail.dev/privacy · Terms: https://mailsnail.dev/terms · Support: hello@mailsnail.dev
 

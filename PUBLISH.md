@@ -46,9 +46,8 @@ The workflow checks the tag against `packages/mailsnail/package.json`, runs `npm
 exact version is already on npm is skipped, so re-running is safe (it can also be run by
 hand from the Actions tab).
 
-It does not touch the MCP registry. Afterwards, bump `packages[].version` in
-`packages/mailsnail/server.json` to the new npm version in a follow-up commit to `main`;
-that triggers `publish-registry.yml`.
+It does not touch the MCP registry, and a release needs no registry change: since
+record 0.6.3 the registry record lists the hosted server only (see "Official MCP registry").
 
 ### Fallback: publish from your laptop
 
@@ -141,9 +140,14 @@ tag push, and an agent can do the whole thing.
 **Preferred: let CI do it.** `.github/workflows/publish-registry.yml` publishes
 `packages/mailsnail/server.json` with GitHub OIDC whenever that file changes on
 `main`, and can be run by hand from the Actions tab (`publish-registry` → Run
-workflow). No login, no laptop. It first checks that `packages[].version` exists
-on npm and that `name` matches `mcpName`, so a bad record fails before it reaches
-the registry. Bump the top-level `version` with every change.
+workflow). No login, no laptop. It first checks that `name` matches `mcpName` and
+that any npm version the record pins exists on npm, so a bad record fails before it
+reaches the registry. Bump the top-level `version` with every change: the registry
+takes each version once.
+
+A run started by hand publishes the record on the branch it is started from, so a
+record can go out before its commit reaches `main`. When that commit lands on `main`,
+the run there finds the version already in the registry and publishes nothing.
 
 Fallback, from your machine (a device-flow login — start it only when you can
 approve immediately; the code expires):
@@ -157,32 +161,32 @@ C:\Users\ian\mcp-publisher.exe publish
 Ownership is proven by the `mcpName` field in `packages/mailsnail/package.json`
 matching the server name — keep them in sync.
 
-### The registry record is not tied to an npm release
+### The registry record lists the hosted server only
 
-`server.json` describes two ways to reach the same server, and they version
-independently:
+Since record 0.6.3, `server.json` has `remotes[]` and no `packages[]`:
 
-- `remotes[]` — the hosted server at `https://api.mailsnail.dev/mcp`. This is the
-  path most people take: add the URL, sign in through the client, done. It ships
-  when Railway ships. **No npm release is involved.**
-- `packages[]` — the npm package, for self-hosters running against their own
-  Click2Mail or Lob account.
+- `remotes[]` is the hosted server at `https://api.mailsnail.dev/mcp`. This is the
+  path people take: add the URL, sign in through the client, done. It ships when
+  Railway ships. **No npm release is involved.**
+- The npm package is for self-hosters running against their own Click2Mail or Lob
+  account. It is documented in the README and is not in the registry record.
 
-So `packages[].version` must name a version that **actually exists on npm**, or
-the publish is rejected — the registry resolves it to check the `mcpName`
-ownership marker. Keep it pinned to `npm view mailsnail version`, not to whatever
-is staged locally. The top-level `version` is the registry record's own number and
-can move on its own; bump it whenever you republish (adding the hosted endpoint
-took `0.6.0` → `0.6.1` with npm still at `0.6.0`).
+Why: directories copy the record, and the ones that prefer a package printed
+`npx -y mailsnail` with placeholder settings instead of the hosted URL. A person
+who followed that got the package's default mode, which most AI apps cannot pay
+through, and never reached the sign-in that works. Records 0.6.1 and 0.6.2 listed
+both; 0.6.0 listed only the package.
 
-When an npm release does go out, set both to the new number in the same commit.
+The top-level `version` is the record's own number and is not the npm version.
+If a package is ever listed again, `packages[].version` must name a version that
+**actually exists on npm** (`npm view mailsnail version`), or the publish is
+rejected: the registry resolves it to check the `mcpName` ownership marker.
 
 ## Checklist
 
 - [ ] `npm test` green at the repo root
-- [ ] Versions bumped in `packages/*/package.json` **and** `server.json`
-- [ ] `server.json` `packages[].version` matches `npm view mailsnail version`
+- [ ] Versions bumped in `packages/*/package.json`
 - [ ] Inter-package dependency ranges point at the new core version
 - [ ] Publish core → gateway → mailsnail
 - [ ] `npx -y mailsnail@latest doctor` behaves as expected
-- [ ] Registry: merge the `server.json` bump to `main` (CI publishes), or run `mcp-publisher publish`
+- [ ] Registry: nothing to do for an npm release. When the record itself changes, bump its `version` and merge to `main` (CI publishes), or run `mcp-publisher publish`
