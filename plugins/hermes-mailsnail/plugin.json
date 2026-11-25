@@ -1,0 +1,22 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "mailsnail",
+  "version": "1.0.0",
+  "description": "Send real USPS letters and certified mail from Hermes through MailSnail's hosted MCP server, with no account and no sign-in. The agent checks the address, previews a PDF proof with the exact price, and hands the user a payment link; the letter is mailed when the user pays. Priced at cost, US addresses only.",
+  "author": {
+    "name": "MailSnail",
+    "email": "hello@mailsnail.dev",
+    "url": "https://mailsnail.dev"
+  },
+  "homepage": "https://mailsnail.dev/setup?utm_source=hermes",
+  "repository": "https://github.com/iancollins27/mailsnail",
+  "license": "MIT",
+  "keywords": ["mail", "letter", "usps", "certified-mail", "postal", "notice", "mcp"],
+  "extensions": {
+    "com.nousresearch.hermes": {
+      "servers": {
+        "mailsnail": { "trust": "untrusted" }
+      }
+    }
+  }
+}
